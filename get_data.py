@@ -3,6 +3,7 @@ import re
 import pymysql
 import time
 import datetime
+import MyUtil
 
 
 def get_data(url=None):
@@ -51,8 +52,7 @@ def get_data(url=None):
     return result, s3
 
 
-conn = pymysql.connect(host='192.168.2.226', user='kairuitouzi', passwd='kairuitouzi', charset='utf8', port=3306,
-                       db='stock_data')
+conn = MyUtil.get_conn('stock_data')
 cur = conn.cursor()
 
 
