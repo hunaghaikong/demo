@@ -1,4 +1,4 @@
-import itchat, time, re, requests,os,json
+import itchat, time, re, requests, os, json
 from itchat.content import *
 import urllib.request as rq
 from MyUtil import MyUtil
@@ -6,43 +6,46 @@ from pytdx.hq import TdxHq_API
 
 api = TdxHq_API()
 myutil = MyUtil()
-myfmt={'t':['T','分时','时','时K','FS'],
-       'd':['D','日','日K','RX'],
-       'w':['W','周','ZX','周K'],
-       'm':['M','月','YX','月K']}
+myfmt = {'t': ['T', '分时', '时', '时K', 'FS'],
+         'd': ['D', '日', '日K', 'RX'],
+         'w': ['W', '周', 'ZX', '周K'],
+         'm': ['M', '月', 'YX', '月K']}
+
 
 def tuling(info):
-    appkey="14283e062e694e7398453680634cbcfc"
-    url = "http://www.tuling123.com/openapi/api?key=%s&info=%s"%(appkey,info)
+    appkey = "14283e062e694e7398453680634cbcfc"
+    url = "http://www.tuling123.com/openapi/api?key=%s&info=%s" % (appkey, info)
     req = requests.get(url)
     content = req.text
     data = json.loads(content)
     answer = data['text']
     return answer
 
-def getCodePicture(msg,param,s):
-    rq_code,picture,types,isPicture=None,None,None,True
+
+def getCodePicture(msg, param, s):
+    rq_code, picture, types, isPicture = None, None, None, True
     if s and s in myfmt['t']:  # 分时K线
-        types='min'
+        types = 'min'
     elif s and s in myfmt['d']:  # 日K线
-        types='daily'
+        types = 'daily'
     elif s and s in myfmt['w']:  # 周K线
-        types='weekly'
+        types = 'weekly'
     elif s and s in myfmt['m']:  # 月K线
-        types='monthly'
+        types = 'monthly'
     else:  # 返回股票文本信息
         isPicture = False
         getText(msg, param)
-    if len(param)<= 2 and os.path.isfile('myfile\\%s.txt' % msg['FromUserName']):
+    if len(param) <= 2 and os.path.isfile('myfile\\%s.txt' % msg['FromUserName']):
         with open('myfile\\%s.txt' % msg['FromUserName']) as f:
             rq_code = f.readlines()[-1].strip('\n').split()
     else:
         rq_code = myutil.getCode(param.strip()[1:])
     if rq_code and types:
-        picture = rq.urlopen('http://image.sinajs.cn/newchart/%s/n/%s.gif' % (types,rq_code[0])).read()
-    return rq_code,picture,isPicture
+        picture = rq.urlopen('http://image.sinajs.cn/newchart/%s/n/%s.gif' % (types, rq_code[0])).read()
+    return rq_code, picture, isPicture
 
-def getText(msg,news):
+
+def getText(msg, news):
     rq_code = myutil.getCode(news[1:])
     if rq_code:
         '''try:
@@ -69,54 +72,56 @@ def getText(msg,news):
                     % (rq_code[1], rq_code[0], d1[3], d1[2], d1[1], d1[4], d1[5], extent, '%', d1[-2]),
                     toUserName=msg['FromUserName'])
 
+
 def mysends(msg):
     a = msg['Content']
-    news, rq_code ,isPicture= None, None,True #请求信息，请求代码，是否返回图片
+    news, rq_code, isPicture = None, None, True  # 请求信息，请求代码，是否返回图片
     try:
         news = a[a.index('\u2005') + 1:].upper().strip()
     except:
         news = a.upper().strip()
     print(news)
-    if news and (news[0]=='%'or news[0]=='％'):
-        news=news.split()
-        if len(news[0])>=7 and len(re.findall('\d',news[0]))>=5:
-            if len(news)==1:
+    if news and (news[0] == '%' or news[0] == '％'):
+        news = news.split()
+        if len(news[0]) >= 7 and len(re.findall('\d', news[0])) >= 5:
+            if len(news) == 1:
                 param, s = news[0][:7], news[0][7:]
                 rq_code, picture, isPicture = getCodePicture(msg, param, s)
-            elif len(news)>=2:
+            elif len(news) >= 2:
                 param, s = news[0], news[1]
                 rq_code, picture, isPicture = getCodePicture(msg, param, s)
             else:  # 返回股票文本信息
-                isPicture=False
-                getText(msg,news[0])
-        elif len(news)==1 and len(news[0])>5:
-            param,s=news[0][:5],news[0][5:]
-            rq_code, picture,isPicture = getCodePicture(msg, param, s)
-        elif len(news)>=2:
-            param,s=news[0], news[1]
-            rq_code, picture ,isPicture= getCodePicture(msg, param, s)
-        elif len(news[0])<=2:
-            param,s = news[0].strip(),news[0].strip()[1:]
+                isPicture = False
+                getText(msg, news[0])
+        elif len(news) == 1 and len(news[0]) > 5:
+            param, s = news[0][:5], news[0][5:]
+            rq_code, picture, isPicture = getCodePicture(msg, param, s)
+        elif len(news) >= 2:
+            param, s = news[0], news[1]
+            rq_code, picture, isPicture = getCodePicture(msg, param, s)
+        elif len(news[0]) <= 2:
+            param, s = news[0].strip(), news[0].strip()[1:]
             rq_code, picture, isPicture = getCodePicture(msg, param, s)
 
         else:  # 返回股票文本信息
-            isPicture=False
-            getText(msg,news[0])
+            isPicture = False
+            getText(msg, news[0])
 
         if isPicture and rq_code:
             with open('myfile\\%s.png' % rq_code[0], 'wb') as f:
                 f.write(picture)
-            itchat.send_image('myfile\\%s.png' % rq_code[0],toUserName=msg['FromUserName'])
+            itchat.send_image('myfile\\%s.png' % rq_code[0], toUserName=msg['FromUserName'])
     else:
-        if news in ['START','STOP']:
-            with open('myfile\\flag.txt','w') as f:
+        if news in ['START', 'STOP']:
+            with open('myfile\\flag.txt', 'w') as f:
                 f.write(news)
         if os.path.isfile('myfile\\flag.txt'):
             with open('myfile\\flag.txt', 'r') as f:
-                flag=f.read()
-            if flag=='START':
-                res_info=tuling(msg['Content'])
-                itchat.send(res_info,toUserName=msg['FromUserName'])
+                flag = f.read()
+            if flag == 'START':
+                res_info = tuling(msg['Content'])
+                itchat.send(res_info, toUserName=msg['FromUserName'])
+
 
 @itchat.msg_register([TEXT, PICTURE, MAP, CARD, NOTE, SHARING, RECORDING, ATTACHMENT, VIDEO])
 def text_reply(msg):
@@ -128,17 +133,20 @@ def group_text_reply(msg):
     if msg.isAt:
         mysends(msg)
 
+
 def login():
     if not os.path.isdir('myfile'):
         os.mkdir('myfile')
+
 
 def exits():
     for i in os.listdir('myfile'):
         os.remove('myfile\\' + i)
     os.removedirs('myfile')
 
-if __name__=='__main__':
-    itchat.auto_login(hotReload=True,loginCallback=login,exitCallback=None)  # 登陆，并存储登陆状态
+
+if __name__ == '__main__':
+    itchat.auto_login(hotReload=True, loginCallback=login, exitCallback=None)  # 登陆，并存储登陆状态
     itchat.run()
     for i in os.listdir('myfile'):
         os.remove('myfile\\' + i)
