@@ -9,46 +9,6 @@ import MyUtil
 检查恒生指数断点时间
 """
 
-
-def getDate(size=300, code='hkHSI'):
-    '''
-    :param size: The most recent days to get
-    :param code: Product name
-    :return:Date list. example:['2017-12-01',。。。]
-    '''
-    fileName='getDate.txt'
-    if os.path.isfile(fileName):
-        times=time.localtime(os.path.getmtime(fileName))
-        if times.tm_mday==time.localtime().tm_mday:
-            with open(fileName,'rb') as f:
-                s=pickle.load(f)
-            return s
-    s = requests.get(
-        'http://web.ifzq.gtimg.cn/appstock/app/kline/kline?_var=kline_dayqfq&param=%s,day,,,%s' % (code, size)).text
-    s = re.findall('(\d\d\d\d-\d\d-\d\d)', s)
-    s = list(set(s))
-    s.sort()
-    with open(fileName,'wb') as f:
-        pickle.dump(s,f)
-    return s
-
-
-def mysql_date(code='HSIc1'):
-    """
-    :param code: Product name
-    :return: Database date tuple. example:('2017-12-01',...)
-    """
-    conn = MyUtil.get_conn('stock_data')
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT DATE_FORMAT(datetime,'%Y-%m-%d') FROM index_min WHERE CODE='{}' GROUP BY DATE_FORMAT(datetime,'%Y%m%d') ORDER BY datetime".format(
-            code))
-    dates = cur.fetchall()
-    conn.close()
-    dates = tuple(i[0] for i in dates)
-    return dates
-
-
 def get_min_data(code='HSIc1'):
     '''
     :param code: Product name
@@ -80,8 +40,50 @@ def get_min_data(code='HSIc1'):
             mi[-1][6] = mi[-1][6] + mins[i][6]
         else:
             mi.append(list(mins[i]))
+    m=0
+    while 1:
+        yield m
+        m=mi
 
-    return mi
+# Initializes generator
+mi_init = get_min_data()
+mi_init.send(None)
+
+def getDate(size=300, code='hkHSI'):
+    '''
+    :param size: The most recent days to get
+    :param code: Product name
+    :return:Date list. example:['2017-12-01',。。。]
+    '''
+    fileName='getDate.txt'
+    if os.path.isfile(fileName):
+        times=time.localtime(os.path.getmtime(fileName))
+        if times.tm_mday==time.localtime().tm_mday:
+            with open(fileName,'rb') as f:
+                s=pickle.load(f)
+            return s
+    s = requests.get(
+        'http://web.ifzq.gtimg.cn/appstock/app/kline/kline?_var=kline_dayqfq&param=%s,day,,,%s' % (code, size)).text
+    s = re.findall('(\d\d\d\d-\d\d-\d\d)', s)
+    s = list(set(s))
+    s.sort()
+    with open(fileName,'wb') as f:
+        pickle.dump(s,f)
+    return s
+
+
+def mysql_date(code='HSIc1'):
+    """
+    :param code: Product name
+    :return: Database date tuple. example:('2017-12-01',...)
+    """
+    conn = MyUtil.get_conn('stock_data')
+    cur = conn.cursor()
+    cur.execute("SELECT DATE_FORMAT(datetime,'%Y-%m-%d') FROM index_min WHERE CODE='{}' GROUP BY DATE_FORMAT(datetime,'%Y%m%d') ORDER BY datetime".format(code))
+    dates = cur.fetchall()
+    conn.close()
+    dates = tuple(i[0] for i in dates)
+    return dates
 
 
 def mysql_min():
@@ -124,8 +126,22 @@ def jcTime(date_sql):
     return res_i
 
 
-def integration():
-    pass
+def turnover(size=6,mult=6,vols=1000):
+    '''
+    :param size: Minute data interval
+    :param mult: The multiple of the previous volume
+    :param vols: Minimum volume of volume
+    :return: Data list of abnormal volume
+    '''
+    mi=mi_init.send(1)
+    res_mi=[]
+    for i in range(size,len(mi)):
+        vol=0
+        for j in range(i-size,i):
+            vol+=mi[j][-1]
+        if mi[i][-1]>vols and mi[i][-1]>vol/size*mult:
+            res_mi.append(mi[i])
+    return res_mi
 
 
 def main():
@@ -137,10 +153,14 @@ def main():
     print('当天分钟数据缺失：%d天，如下：' % len(res_i))
     print(res_i)
 
-    mi = get_min_data()
+    mi = mi_init.send(1)
     print('去除1200、1630、2345等收盘点数据，并合并到了上一分钟，数据长度，和一条实例如下：')
     print(len(mi), mi[0])
 
+    print('成交量异动：')
+    abnormal_vol=turnover(mult=10,vols=2000)
+    for i in abnormal_vol:
+        print(str(i[0]),i)
 
 if __name__ == '__main__':
     main()
