@@ -1,5 +1,6 @@
 from win32com import client as wc
 import xlrd
+import requests
 
 
 def read_doc(fname='FS_HSIc.doc'):
@@ -49,13 +50,11 @@ def read_xls(code_name, fname='faf.xls'):
     jg5 = {'hk0' + i[0][:4]: i[2] for i in jg3}  # 比重上限系数
     return jg4, jg5
 
-
-def main():
-    CODE_NAME = read_doc()  # 代码：名称
-    CODE_FLOW, CODE_WEIGHT = read_xls(CODE_NAME)  # 流通系数，比重系数
-
-    # 代码：股本，亿
-    CODE_EQUITY = {'hk00005': 203.21, 'hk00011': 19.12, 'hk00023': 27.65, 'hk00388': 12.40, 'hk00939': 2404.17,
+def get_gb():
+    '''
+    :return:股本
+    '''
+    gb={'hk00005': 203.21, 'hk00011': 19.12, 'hk00023': 27.65, 'hk00388': 12.40, 'hk00939': 2404.17,
                    'hk01299': 120.75, 'hk01398': 867.94, 'hk02318': 74.48, 'hk02388': 105.73, 'hk02628': 74.41,
                    'hk03328': 350.12, 'hk03988': 836.22, 'hk00002': 25.26, 'hk00003': 139.88, 'hk00006': 21.34,
                    'hk00836': 48.10, 'hk01038': 26.51, 'hk00004': 30.39, 'hk00012': 40.01, 'hk00016': 28.97,
@@ -66,6 +65,17 @@ def main():
                    'hk00762': 305.98, 'hk00857': 210.99, 'hk00883': 446.47, 'hk00941': 204.75, 'hk00992': 120.15,
                    'hk01044': 12.06, 'hk01088': 33.99, 'hk01928': 80.74, 'hk02018': 12.22, 'hk02319': 39.27,
                    'hk02382': 10.97}
+    #for i in gb:
+    #    d=requests.get('http://quote.eastmoney.com/hk/%s.html'%i[2:]).text
+
+    return gb
+
+def main():
+    CODE_NAME = read_doc()  # 代码：名称
+    CODE_FLOW, CODE_WEIGHT = read_xls(CODE_NAME)  # 流通系数，比重系数
+
+    # 代码：股本，亿
+    CODE_EQUITY = get_gb()
 
     print('代码，名称：')
     print(CODE_NAME)
@@ -89,4 +99,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+    get_gb()
