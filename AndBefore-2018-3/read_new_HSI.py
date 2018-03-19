@@ -1,6 +1,6 @@
 from win32com import client as wc
 import xlrd
-import os
+
 
 def read_doc(fname='FS_HSIc.doc'):
     ''' 读取 权重股 FS_HSIc.doc，返回，代码：名称，字典'''
@@ -20,7 +20,7 @@ def read_doc(fname='FS_HSIc.doc'):
                     break
                 doc1.append(j)
     doc = [i.split('\t') for i in doc1]
-    code_name={}
+    code_name = {}
     for i in doc:
         code = 'hk'
         for n in range(5 - len(i[1])):
@@ -31,7 +31,7 @@ def read_doc(fname='FS_HSIc.doc'):
     return code_name
 
 
-def read_xls(code_name,fname='faf.xls'):
+def read_xls(code_name, fname='faf.xls'):
     ''' 读取流通系数与比重系数faf.xls，返回，代码：系数，字典 '''
     x = xlrd.open_workbook(fname)
     table = x.sheets()[0]
@@ -87,5 +87,6 @@ def main():
     print('CODE_PRODUCT:')
     print(CODE_PRODUCT)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()
