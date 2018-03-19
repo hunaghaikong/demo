@@ -1,6 +1,8 @@
 
 import requests,json
 
+""" 股票数据提取 """
+
 def formats(data):
     '''把数据转换成Python对象（字典）'''
     try:

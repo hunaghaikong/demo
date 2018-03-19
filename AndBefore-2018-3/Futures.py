@@ -83,5 +83,4 @@ if __name__ == '__main__':
     logging.info(s)
     print(s)
     #print(fu.get_F8())
-    sum([1,2,3])
 

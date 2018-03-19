@@ -1,2 +1,10 @@
 get_min.py[2018-03-12 11:21:24][INFO]：程序开始。。。
 get_min.py[2018-03-16 19:13:39][INFO]：程序开始。。。
+Futures.py[2018-03-19 09:05:27][INFO]：开始...
+connectionpool.py[2018-03-19 09:05:27][DEBUG]：Starting new HTTP connection (1): www.etnet.com.hk
+connectionpool.py[2018-03-19 09:05:27][DEBUG]：http://www.etnet.com.hk:80 "GET /www/tc/futures/index.php?subtype=HSI&month=201801 HTTP/1.1" 200 None
+Futures.py[2018-03-19 09:05:27][INFO]：{'HSIF8': [31553.0, datetime.datetime(2018, 3, 19, 9, 5)]}
+Futures.py[2018-03-19 09:06:28][INFO]：开始...
+connectionpool.py[2018-03-19 09:06:28][DEBUG]：Starting new HTTP connection (1): www.etnet.com.hk
+connectionpool.py[2018-03-19 09:06:28][DEBUG]：http://www.etnet.com.hk:80 "GET /www/tc/futures/index.php?subtype=HSI&month=201801 HTTP/1.1" 200 None
+Futures.py[2018-03-19 09:06:28][INFO]：{'HSIF8': [31553.0, datetime.datetime(2018, 3, 19, 9, 6)]}
