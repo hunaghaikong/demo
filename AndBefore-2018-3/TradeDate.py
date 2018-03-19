@@ -154,11 +154,11 @@ def main():
     print(res_i)
 
     mi = mi_init.send(1)
-    print('去除1200、1630、2345等收盘点数据，并合并到了上一分钟，数据长度，和一条实例如下：')
+    print('去除1200、1630、2345等收盘点数据，并合并到了上一分钟，数据长度，和一条示例如下：')
     print(len(mi), mi[0])
 
     print('成交量异动：')
-    abnormal_vol=turnover(mult=10,vols=2000)
+    abnormal_vol=turnover(mult=6,vols=2000)
     for i in abnormal_vol:
         print(str(i[0]),i)
 
