@@ -93,8 +93,8 @@ class Note:
                 Times.append(int((idvy0 % 65536) / 2048))  # yyyy-mm-dd
                 Times.append(int((idvy0 % 2048) / 64))  # yyyy-mm-dd-hh:
                 Times.append(idvy0 % 64)  # yyyy-mm-dd-hh-mm
-                if datetime(Times[0], Times[1], Times[2], Times[3], Times[4]) < last_date:
-                    break
+                #if datetime(Times[0], Times[1], Times[2], Times[3], Times[4]) < last_date:
+                #    break
 
                 zhongji.append(datetime(Times[0], Times[1], Times[2], Times[3], Times[4]))
                 # 开盘价
