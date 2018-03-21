@@ -10,6 +10,9 @@ config.read('conf.conf')
 def get_conn(dataName):
     return pymysql.connect(db=dataName,user=config['U']['us'],passwd=config['U']['ps'],host=config['U']['hs'],charset='utf8')
 
+def closeConn(conn):
+    conn.commit()
+    conn.close()
 
 class MyUtil:
     def __init__(self):

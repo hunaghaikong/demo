@@ -3,6 +3,8 @@ import re
 import os
 import time
 import pickle
+import datetime
+import numpy as np
 import MyUtil
 
 """
@@ -81,23 +83,49 @@ def mysql_date(code='HSIc1'):
     cur = conn.cursor()
     cur.execute("SELECT DATE_FORMAT(datetime,'%Y-%m-%d') FROM index_min WHERE CODE='{}' GROUP BY DATE_FORMAT(datetime,'%Y%m%d') ORDER BY datetime".format(code))
     dates = cur.fetchall()
-    conn.close()
+    MyUtil.closeConn(conn)
     dates = tuple(i[0] for i in dates)
     return dates
 
 
-def mysql_min():
+def mysql_min(dates=None):
     """
     :return: Dictionaries of data bars corresponding to a database daily. example:{'2017-12-01':768,...}
     """
     conn = MyUtil.get_conn('stock_data')
     cur = conn.cursor()
-    cur.execute(
-        "SELECT DATE_FORMAT(datetime,'%Y-%m-%d'),COUNT(*) FROM index_min WHERE CODE='HSIc1' GROUP BY DATE_FORMAT(datetime,'%Y%m%d')")
-    mins = cur.fetchall()
-    conn.close()
-    mins = {i[0]: i[1] for i in mins}
-    return mins
+    if not dates:
+        cur.execute(
+            "SELECT DATE_FORMAT(datetime,'%Y-%m-%d'),COUNT(*) FROM index_min WHERE CODE='HSIc1' GROUP BY DATE_FORMAT(datetime,'%Y%m%d')")
+        mins = cur.fetchall()
+        MyUtil.closeConn(conn)
+        mins = {i[0]: i[1] for i in mins}
+        return mins
+    else:
+        def sfm(sj,reduce=None):
+            if reduce:
+                return sj-datetime.timedelta(minutes=1)
+            if sj.hour==12:
+                return sj+datetime.timedelta(hours=1)
+            elif sj.hour==16 and sj.minute==30:
+                return sj+datetime.timedelta(minutes=45)
+            else:
+                return sj+datetime.timedelta(minutes=1)
+
+        dates=tuple([i[0] for i in dates])
+        cur.execute("select datetime from index_min where date_format(datetime,'%Y-%m-%d') in {}".format(dates))
+        mins=cur.fetchall()
+        MyUtil.closeConn(conn)
+        mins=np.array([i[0] for i in mins])
+        date_min={}
+        for d in dates:#datetime.timedelta(minutes=1)
+            da=datetime.datetime.strptime(d,'%Y-%m-%d')
+            da1=da+datetime.timedelta(days=1)
+            m=mins[mins[:]>da]
+            m=m[m[:]<da1]
+
+            date_min[d]=[str(m[0]),str(m[-1])]
+        return date_min
 
 
 def jcDate(date_sql):
@@ -148,20 +176,42 @@ def main():
     date_sql = mysql_date()
     res = jcDate(date_sql)
     res_i = jcTime(date_sql)
+    res_min=mysql_min(res_i)
     print('全天没有数据：%d天，如下：' % len(res))
     print(res)
     print('当天分钟数据缺失：%d天，如下：' % len(res_i))
     print(res_i)
-
+    print('分钟数据，如下：')
+    print(res_min)
     mi = mi_init.send(1)
     print('去除1200、1630、2345等收盘点数据，并合并到了上一分钟，数据长度，和一条示例如下：')
     print(len(mi), mi[0])
 
     print('成交量异动：')
     abnormal_vol=turnover(mult=6,vols=2000)
-    for i in abnormal_vol:
-        print(str(i[0]),i)
+    #for i in abnormal_vol:
+    print(str(abnormal_vol[-1][0]),abnormal_vol[-1])
+
+def MA(sj=5):
+    '''
+    :param sj: Interval days
+    :return:Minute data added to the moving average line
+    '''
+    mi=mi_init.send(1)
+    for i in range(len(mi)):
+        if i<sj-1:
+            mi[i].append(mi[i][4])
+        else:
+            co=0
+            for j in range(i-4,i+1):
+                co+=mi[j][4]
+            mi[i].append(co/sj)
+
+    for i in mi[:10]:
+        print(i)
+
+
 
 if __name__ == '__main__':
-    main()
-
+    #main()
+    MA(5)
