@@ -203,7 +203,7 @@ def MA(sj=5):
             mi[i].append(mi[i][4])
         else:
             co=0
-            for j in range(i-4,i+1):
+            for j in range(i-sj+1,i+1):
                 co+=mi[j][4]
             mi[i].append(co/sj)
 
@@ -212,6 +212,7 @@ def MA(sj=5):
 
 
 
+
 if __name__ == '__main__':
-    #main()
-    MA(5)
+    main()
+    MA(2)
