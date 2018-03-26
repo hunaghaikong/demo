@@ -10,3 +10,5 @@ connectionpool.py[2018-03-19 09:06:28][DEBUG]：http://www.etnet.com.hk:80 "GET /
 Futures.py[2018-03-19 09:06:28][INFO]：{'HSIF8': [31553.0, datetime.datetime(2018, 3, 19, 9, 6)]}
 get_min.py[2018-03-19 18:13:37][INFO]：程序开始。。。
 get_min.py[2018-03-19 18:15:03][INFO]：程序开始。。。
+get_min.py[2018-03-26 19:20:00][INFO]：程序开始。。。
+get_min.py[2018-03-26 19:24:29][INFO]：程序开始。。。

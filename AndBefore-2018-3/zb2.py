@@ -66,11 +66,7 @@ def macds(ma=6):
     return get_MACD(df,12,26,9)
 
 def macd2(df,ma=6,short=13,long=27):
-    # conn=MyUtil.get_conn('stock_data')
-    # sql="SELECT DATETIME,open,high,low,CLOSE,vol FROM index_min WHERE CODE='HSIc1' AND datetime>'2018-03-12' AND datetime<='2018-03-15'" # LIMIT 0,71773"
-    # df=pd.read_sql(sql,conn)
-    # df.columns=['date','open','high','low','close','vol']
-    # MyUtil.closeConn(conn)
+
     data=df.close
     df['ema_short']=0
     df['ema_long']=0
@@ -115,7 +111,7 @@ def macd2(df,ma=6,short=13,long=27):
             price=df.close[i]-df.open[i]
             std=df['std'][i]
             if std is not np.nan:
-                df.ix[i, 'mul']=round(price/std,1)
+                df.loc[i, 'mul']=round(price/std,1)
 
     data=None
     while 1:
@@ -131,14 +127,14 @@ def macd2(df,ma=6,short=13,long=27):
             df.ix[ind,'close']=data[4]
             df.ix[ind,'vol']=data[5]
 
-            df.ix[ind,'ema_short'] = df.ix[ind-1,'ema_short'] * 11 / short + df.ix[ind,'close'] * 2 / short
-            df.ix[ind,'ema_long'] = df.ix[ind-1,'ema_long'] * 25 / long + df.ix[ind,'close'] * 2 / long
+            df.ix[ind,'ema_short'] = df.ix[ind-1,'ema_short'] * 11 / short + df.ix[ind,'close'] * 2 / short  # 当日EMA(12)
+            df.ix[ind,'ema_long'] = df.ix[ind-1,'ema_long'] * 25 / long + df.ix[ind,'close'] * 2 / long  # 当日EMA(26)
             df.ix[ind,'diff'] = df.ix[ind,'ema_short'] - df.ix[ind,'ema_long']
             df.ix[ind,'dea'] = df.ix[ind-1,'dea'] * 8 / 10 + df.ix[ind,'diff'] * 2 / 10
             df.ix[ind,'macd'] = 2 * (df.ix[ind,'diff'] - df.ix[ind,'dea'])
 
             df.ix[ind,'ma']=sum(df.ix[ind-j,'close'] for j in range(ma))/ma # 移动平均值
-            df.ix[ind,'var']=sum((df.ix[ind-j,'close']-df.ix[i,'ma'])**2 for j in range(ma))/ma # 方差
+            df.ix[ind,'var']=sum((df.ix[ind-j,'close']-df.ix[ind,'ma'])**2 for j in range(ma))/ma # 方差
             df.ix[ind,'std']=np.sqrt(df.ix[ind,'var']) # 标准差
 
             if df.macd[ind]>=0 and df.macd[ind-1]<0:
@@ -188,65 +184,65 @@ def main():
     # print(df)
     pass
 
-if __name__=='__main__':
-    # main()
-    # data=macds(6)
-    # print(data[-46:])
-    # for i in data.ix[-45:,['date','std']].values:
-    #     print(i)
+def main2(_ma=9,_dates='2018-03-12', _ts=9):
     res={}
-    _dates='2018-03-12'
     is_d=0
     is_k=0
-    _ma=20
-    for i in range(9):
-        dates=_dates[:8]+str(int(_dates[-2:])+i)
+    i=0
+    while i<_ts:
+        dates=str(datetime.datetime.strptime(_dates,'%Y-%m-%d')+datetime.timedelta(days=i))[:10]
         df=get_data(dates)
-        res[dates]={'duo':0,'kong':0,'mony':0,'jq':0,'datetimes':[]}
-        data2=macd2(df=df[:_ma+1],ma=_ma)
-        dt2=data2.send(None)
+        if len(df)<1:
+            i+=1
+            continue
+        res[dates]={'duo':0,'kong':0,'mony':0,'datetimes':[],'dy':0,'xy':0}
+        if i==0:
+            data2=macd2(df=df[:_ma+1],ma=_ma)
+            dt2=data2.send(None)
+        str_time1=None if is_d==0 else str_time1
+        str_time2=None if is_k==0 else str_time2
+        jg_d=0 if is_d==0 else jg_d
+        jg_k=0 if is_k==0 else jg_k
+        i+=1
         for df2 in df[_ma+1:].values:
+            # df2格式：[Timestamp('2018-03-16 09:22:00') 31304.0 31319.0 31295.0 31316.0 275]
             dt2=data2.send(list(df2))
-            # print('....................................................',type(dt2))
-            # clo=dt2.close
-            # macd=dt2.macd
-            # ma=dt2.ma
-            # std=dt2.std
-            # reg=dt2.reg
-            # mul=dt2.mul
-            #print(dt2)
             dt2=np.array(dt2)[0]
-            datetimes,clo,macd,ma,std,reg,mul=dt2[0],dt2[4],dt2[10],dt2[11],dt2[13],dt2[14],dt2[15]
-            #print(clo,macd,ma,std,reg,mul)
-            if clo>ma and mul>1.5 and is_d==0:
+            datetimes,clo,macd,mas,std,reg,mul=dt2[0],dt2[4],dt2[10],dt2[11],dt2[13],dt2[14],dt2[15]
+            if mul>1.5:
+                res[dates]['dy']+=1
+            if mul<-1.5:
+                res[dates]['xy']+=1
+            if clo>mas and mul>1.5 and is_d==0:
                 res[dates]['duo']+=1
-                res[dates]['jq']=clo
-                res[dates]['datetimes'].append(datetimes)
+                jg_d=clo
+                str_time1=str(datetimes)[11:]
                 is_d=1
-            if clo<ma and mul<-1.5 and is_k==0:
+            if clo<mas and mul<-1.5 and is_k==0:
                 res[dates]['kong']+=1
-                res[dates]['jq']=clo
-                res[dates]['datetimes'].append(datetimes)
+                jg_k=clo
+                str_time2=str(datetimes)[11:]
                 is_k=-1
-            if is_d==1 and macd<0:
-                res[dates]['mony']+=clo-res[dates]['jq']
+            if is_d==1 and macd<0 and clo<mas:
+                res[dates]['mony']+=(clo-jg_d)
+                res[dates]['datetimes'].append([str_time1+'--'+str(datetimes)[11:],'多',clo-jg_d])
                 is_d=0
-            if is_k==-1 and macd>0:
-                res[dates]['mony']+=res[dates]['jq']-clo
+            if is_k==-1 and macd>0 and clo>mas:
+                res[dates]['mony']+=(jg_k-clo)
+                res[dates]['datetimes'].append([str_time2+'--'+str(datetimes)[11:],'空',jg_k-clo])
                 is_k=0
 
-    print(res)
+    zje=0
+    for i in res:
+        print('标准差大于收盘价1.5倍：',res[i]['dy'],'\t','标准差小于收盘价1.5倍：',res[i]['xy'],)
+        print('多单：',res[i]['duo'],'  ','空单：',res[i]['kong'],'  ','盈亏：',res[i]['mony'],'  ','详细：%s'%i,res[i]['datetimes'])
+        zje+=res[i]['mony']
+        print()
+    print(zje)
 
-    #macd_to_sql(data)
-    # dt=[]
-    # for s in dt:
-    #     s=s.split()
-    #     s[0]=datetime.datetime.strptime(s[0]+' '+s[1],'%Y-%m-%d %H:%M:%S')
-    #     s[1]=float(s[2])
-    #     s[2]=float(s[3])
-    #     s[3]=float(s[4])
-    #     s[4]=float(s[5])
-    #     s[5]=int(s[6])
-    #     dt2=data2.send(s[:6])
-    #     print(dt2[-2:])
-    #     time.sleep(1)
+if __name__=='__main__':
+    ma=60 # 设置均线时长
+    dates='2018-03-19' # 开始时间，这天必须有数据
+    ts=5 # 要测试的天数
+    main2(_ma=ma, _dates=dates, _ts=ts)
+

@@ -214,7 +214,7 @@ class Note:
             return
         while self.isRun:
             # min文件目录
-            filename = os.listdir(min_input)
+            filename=['HSIc1.min']  # filename = os.listdir(min_input)
             i = 0
             while i < len(filename):
                 strx = filename[i]
@@ -276,6 +276,7 @@ class Note:
             self.textpad.update()
             time.sleep(2)
         conn.close()
+
 
     def thread_opens(self):
         t=threading.Thread(target=self.opens,args='')
