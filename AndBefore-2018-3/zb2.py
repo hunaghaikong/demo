@@ -17,12 +17,12 @@ def get_data(dates):
 
 
 
-def macds(ma=6):
+def macds(ma=60):
     '''
     :return: macd data,DataFrame format
     '''
     conn=MyUtil.get_conn('stock_data')
-    sql="SELECT DATETIME,open,high,low,CLOSE,vol FROM index_min WHERE CODE='HSIc1' AND datetime>'2018-03-12' AND datetime<'2018-03-15'" # LIMIT 0,71773"
+    sql="SELECT DATETIME,open,high,low,CLOSE,vol FROM index_min WHERE CODE='HSIc1' AND datetime>'2018-03-26' AND datetime<'2018-03-28'" # LIMIT 0,71773"
     df=pd.read_sql(sql,conn)
     df.columns=['date','open','high','low','close','vol']
     MyUtil.closeConn(conn)
@@ -46,8 +46,8 @@ def macds(ma=6):
                 df.ix[i,'dea']=(2*df.ix[i,'diff']+(M-1)*df.ix[i-1,'dea'])/(M+1)
         df['macd']=2*(df['diff']-df['dea'])
         df['ma']= df.close.rolling(ma).mean() # pd.rolling_mean(df['close'],ma)
-        df['var']=df.close.rolling(ma).var() # pd.rolling_var(df['close'],ma)
-        df['std']=df.close.rolling(ma).std() # pd.rolling_std(df['close'],ma)
+        df['var']=df.close.rolling(60).var() # pd.rolling_var(df['close'],ma)
+        df['std']=df.close.rolling(60).std() # pd.rolling_std(df['close'],ma)
         df['reg']=0
         df['mul']=0
         co=1 if df.macd[1]>=0 else 0
@@ -180,11 +180,12 @@ def main():
     # ma=get_ma_data(data)
     # rsi=get_rsi_data(data)
     # cci=get_cci_data(data)
-    # df=macds()
-    # print(df)
-    pass
+    df=macds()
+    macd_to_sql(df)
+    print(df)
 
-def main2(_ma=9,_dates='2018-03-12', _ts=9):
+
+def main2(_ma=60,_dates='2018-03-21', _ts=7):
     res={}
     is_d=0
     is_k=0
@@ -241,8 +242,9 @@ def main2(_ma=9,_dates='2018-03-12', _ts=9):
     print(zje)
 
 if __name__=='__main__':
-    ma=60 # 设置均线时长
-    dates='2018-03-19' # 开始时间，这天必须有数据
-    ts=5 # 要测试的天数
-    main2(_ma=ma, _dates=dates, _ts=ts)
+    # ma=60 # 设置均线时长
+    # dates='2018-03-21' # 开始时间，这天必须有数据
+    # ts=7 # 要测试的天数
+    # main2(_ma=ma, _dates=dates, _ts=ts)
+    main()
 
