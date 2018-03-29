@@ -5,6 +5,8 @@ import time
 
 import MyUtil
 
+""" 恒生指数期货交易策略 """
+
 def get_data(dates):
     conn=MyUtil.get_conn('stock_data')
     #for i in range(9):
@@ -34,7 +36,7 @@ def macds(ma=60):
                 df.ix[i,'ema']=(2*df.ix[i,'close']+(N-1)*df.ix[i-1,'ema'])/(N+1)
         ema=list(df['ema'])
         return ema
-    def get_MACD(df,short=13,long=27,M=10):
+    def get_MACD(df,short=12,long=26,M=9):
         a=get_EMA(df,short)
         b=get_EMA(df,long)
         df['diff']=pd.Series(a)-pd.Series(b)
@@ -45,18 +47,50 @@ def macds(ma=60):
             if i>0:
                 df.ix[i,'dea']=(2*df.ix[i,'diff']+(M-1)*df.ix[i-1,'dea'])/(M+1)
         df['macd']=2*(df['diff']-df['dea'])
-        df['ma']= df.close.rolling(ma).mean() # pd.rolling_mean(df['close'],ma)
-        df['var']=df.close.rolling(60).var() # pd.rolling_var(df['close'],ma)
-        df['std']=df.close.rolling(60).std() # pd.rolling_std(df['close'],ma)
+        df['ma10']=df.close.rolling(10).mean()
+        df['ma30']=df.close.rolling(30).mean()
+        df['ma']= df.close.rolling(window=60,min_periods=2).mean() # pd.rolling_mean(df['close'],ma)
+        df['var']=df.close.rolling(ma).var() # pd.rolling_var(df['close'],ma)
+        stds=df.close-df.open
+        df['std']=stds.rolling(ma).std() # pd.rolling_std(df['close'],ma)
         df['reg']=0
+        df['reg_min']=0
+        df['reg_max']=0
+        df['ma_reg']=0
+        df['ma_min']=0
+        df['ma_max']=0
         df['mul']=0
         co=1 if df.macd[1]>=0 else 0
+        ma_60=1 if df.close[59]>=df.ma[59] else 0
+        reg_min=0
+        reg_max=0
+        ma_min=0
+        ma_max=0
         for i in range(1,len(df.macd)):
-            if df.macd[i]>=0 and df.macd[i-1]<0:
+            df_low=df.low[i]
+            df_high=df.high[i]
+
+            if (df.macd[i]>=0 and df.macd[i-1]<0) or (df.macd[i]<0 and df.macd[i-1]>=0):
                 co+=1
-            elif df.macd[i]<0 and df.macd[i-1]>=0:
-                co+=1
+                df.ix[reg_min,'reg_min']=df.low[reg_min]
+                df.ix[reg_max,'reg_max']=df.high[reg_max]
+                reg_min=i
+                reg_max=i
+            else:
+                reg_min=i if df_low<df.low[reg_min] else reg_min
+                reg_max=i if df_high>df.high[reg_max] else reg_max
+            if (df.close[i]>=df.ma[i] and df.close[i-1]<df.ma[i-1]) or (df.close[i]<df.ma[i] and df.close[i-1]>=df.ma[i-1]):
+                ma_60+=1
+                df.ix[ma_min,'ma_min']=df.low[ma_min]
+                df.ix[ma_max,'ma_max']=df.high[ma_max]
+                ma_min=i
+                ma_max=i
+            else:
+                ma_min=i if df_low<df.low[ma_min] else ma_min
+                ma_max=i if df_high>df.high[ma_max] else ma_max
             df.ix[i,'reg']=co
+
+            df.ix[i,'ma_reg']=ma_60
             price=df.close[i]-df.open[i]
             std=df['std'][i]
             if std is not np.nan:
@@ -156,12 +190,14 @@ def macd_to_sql(data):
     '''
     conn=MyUtil.get_conn('stock_data')
     cur=conn.cursor()
-    sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma,var,std,reg,mul) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    #sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma,var,std,reg,mul) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma10,ma30,ma60,var,std,reg,reg_min,reg_max,ma_reg,ma_min,ma_max,mul) " \
+        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
     count=0
     data=data.fillna(0)
     for d in data.values:
         try:
-            cur.execute(sql,('HSIc1',str(d[0]),d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],d[14]))
+            cur.execute(sql,('HSIc1',str(d[0]),d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15],d[16],d[17],d[18],d[19],d[20],d[21]))
             count+=1
             if not count%10000:
                 conn.commit()

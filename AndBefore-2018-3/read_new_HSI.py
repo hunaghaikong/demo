@@ -2,6 +2,7 @@ from win32com import client as wc
 import xlrd
 import requests
 
+""" 恒生指数期货各种权重系数更新 """
 
 def read_doc(fname='FS_HSIc.doc'):
     ''' 读取 权重股 FS_HSIc.doc，返回，代码：名称，字典'''
