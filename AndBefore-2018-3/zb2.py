@@ -60,12 +60,14 @@ def macds(ma=60):
         df['ma_min']=0
         df['ma_max']=0
         df['mul']=0
+        df['cd']=0
         co=1 if df.macd[1]>=0 else 0
         ma_60=1 if df.close[59]>=df.ma[59] else 0
         reg_min=0
         reg_max=0
         ma_min=0
         ma_max=0
+        cds=1
         for i in range(1,len(df.macd)):
             df_low=df.low[i]
             df_high=df.high[i]
@@ -95,6 +97,17 @@ def macds(ma=60):
             std=df['std'][i]
             if std is not np.nan:
                 df.ix[i, 'mul']=round(price/std,1)
+            # 计算两根K线的比较
+            if abs(df.ix[i,'mul'])>1.5:
+                for j in range(i-1,i-21,-1):
+                    if abs(df.ix[j,'mul'])>1.5:
+                        cd=[df.ix[i,'open']-df.ix[j,'open'],df.ix[i,'high']-df.ix[j,'high'],df.ix[i,'low']-df.ix[j,'low'],df.ix[i,'close']-df.ix[j,'close']]
+                        if len([v for v in cd if abs(v)<=10])>2:
+                            cd2=cds if len([v for v in cd if v>0])>2 else -cds
+                            df.ix[j,'cd']=cd2
+                            df.ix[i,'cd']=cd2
+                            cds+=1
+                            break
 
         return df
     return get_MACD(df,12,26,9)
@@ -191,13 +204,13 @@ def macd_to_sql(data):
     conn=MyUtil.get_conn('stock_data')
     cur=conn.cursor()
     #sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma,var,std,reg,mul) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-    sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma10,ma30,ma60,var,std,reg,reg_min,reg_max,ma_reg,ma_min,ma_max,mul) " \
-        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+    sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma10,ma30,ma60,var,std,reg,reg_min,reg_max,ma_reg,ma_min,ma_max,mul,cd) " \
+        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
     count=0
     data=data.fillna(0)
     for d in data.values:
         try:
-            cur.execute(sql,('HSIc1',str(d[0]),d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15],d[16],d[17],d[18],d[19],d[20],d[21]))
+            cur.execute(sql,('HSIc1',str(d[0]),d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15],d[16],d[17],d[18],d[19],d[20],d[21],d[22]))
             count+=1
             if not count%10000:
                 conn.commit()
