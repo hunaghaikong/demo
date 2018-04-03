@@ -18,12 +18,6 @@ def get_data(dates):
     MyUtil.closeConn(conn)
 
 
-def body_k(o, h, l, c):
-    if h - l > 0:
-        return abs(o - c) / (h - l) > 0.5
-    else:
-        return False
-
 def macds(ma=60):
     '''
     :return: macd data,DataFrame format
@@ -73,7 +67,7 @@ def macds(ma=60):
         ma_min=0
         ma_max=0
         cds=1
-        for i in range(1,len(df.macd)):
+        for i in range(1,len(df.open)):
             df_low=df.low[i]
             df_high=df.high[i]
 
@@ -106,29 +100,43 @@ def macds(ma=60):
             #body_k=lambda o,h,l,c:True if abs(o-c)/(h-l)>0.7 else False
 
             o1 = df.ix[i, 'open']
-            h1 = df.ix[i, 'high']
-            l1 = df.ix[i, 'low']
+            h1 = df_high
+            l1 = df_low
             c1 = df.ix[i, 'close']
-            if abs(df.ix[i,'mul'])>1.5 and body_k(o1,h1,l1,c1):
-                for j in range(i-1,i-11,-1):
+            def body_k(o, h, l, c):
+                if abs(h - l) > 0:
+                    return abs(o - c) / abs(h - l) > 0.6
+                else:
+                    return False
+
+            if abs(df.ix[i,'mul']) > 1.5 and body_k(o1, h1, l1, c1):
+                for j in range(i - 1, i - 15, -1):
                     o2 = df.ix[j,'open']
-                    h2 = df.ix[j,'close']
-                    l2 = df.ix[j, 'low']
-                    c2 = df.ix[j, 'close']
-                    if abs(df.ix[j,'mul'])>1.5 and ((o1>c1 and o2>c2) or (o1<c1 and o2<c2)) and body_k(o2,h2,l2,c2):
-                        #cd=[df.ix[i,'open']-df.ix[j,'open'],df.ix[i,'high']-df.ix[j,'high'],df.ix[i,'low']-df.ix[j,'low'],df.ix[i,'close']-df.ix[j,'close']]
-                        if o1<c1:
-                            if df.ix[j, 'cd'] == 0 and o1<o2<c1 and c2>c1 and (o2-c1)/(c2-o1)>0.4:
-                                df.ix[j, 'cd'] = cds
-                                df.ix[i, 'cd'] = cds
-                                cds += 1
-                                break
-                        else:
-                            if df.ix[j, 'cd'] == 0 and c2<c1<o2 and c2<c1 and (o2-c1)/(o1-c2)>0.5:
-                                df.ix[j, 'cd'] = -cds
-                                df.ix[i, 'cd'] = -cds
-                                cds += 1
-                                break
+                    h2 = df.ix[j,'high']
+                    l2 = df.ix[j,'low']
+                    c2 = df.ix[j,'close']
+                    try:
+                        if abs(df.ix[j,'mul']) > 1.5 and ((o1 > c1 and o2 > c2) or (o1 < c1 and o2 < c2)) and body_k(o2,
+                                                                                                                   h2,
+                                                                                                                   l2,
+                                                                                                                   c2):
+                            # cd=[df.ix[i,'open']-df.ix[j,'open'],df.ix[i,'high']-df.ix[j,'high'],df.ix[i,'low']-df.ix[j,'low'],df.ix[i,'close']-df.ix[j,'close']]
+                            if o1 < c1:
+                                if df.ix[j,'cd'] == 0 and (c2 - o1) / (
+                                        c1 - o2) > 0.4 and c1 > c2 and o2 < o1 < c2 and c2 < c1:  # and o1<o2<c1 and c2>c1  or (c1 - o2) / (c2 - o1) < -0.5)
+                                    df.ix[j,'cd'] = cds
+                                    df.ix[i,'cd'] = cds
+                                    cds += 1
+                                    break
+                            elif o1 > c1:
+                                if df.ix[j,'cd'] == 0 and (o1 - c2) / (
+                                        o2 - c1) > 0.4 and c1 < c2 < o1 and c1 < c2:  # or (o2 - c1) / (o1 - c2) < -0.5)
+                                    df.ix[j,'cd'] = -cds
+                                    df.ix[i,'cd'] = -cds
+                                    cds += 1
+                                    break
+                    except:
+                        continue
 
         return df
     return get_MACD(df,12,26,9)
@@ -226,12 +234,12 @@ def macd_to_sql(data):
     cur=conn.cursor()
     #sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma,var,std,reg,mul) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
     sql="insert into macd(code,date,open,high,low,close,vol,ema,diff,dea,macd,ma10,ma30,ma60,var,std,reg,reg_min,reg_max,ma_reg,ma_min,ma_max,mul,cd) " \
-        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE mul={},cd={}"
     count=0
     data=data.fillna(0)
     for d in data.values:
         try:
-            cur.execute(sql,('HSIc1',str(d[0]),d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15],d[16],d[17],d[18],d[19],d[20],d[21],d[22]))
+            cur.execute(sql.format(d[21],d[22]),('HSIc1',str(d[0]),d[1],d[2],d[3],d[4],d[5],d[6],d[7],d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15],d[16],d[17],d[18],d[19],d[20],d[21],d[22]))
             count+=1
             if not count%10000:
                 conn.commit()
