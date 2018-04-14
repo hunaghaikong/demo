@@ -34,7 +34,7 @@ class Note:
             self.min_input = config['MINK']['filedir']
             self.conn = pymysql.connect(host=host, db=db_name, user=user, passwd=passwd, port=int(port))
         except:
-            self.min_input = 'D:\\同花顺软件\\同花顺港股版\\history\hz\min\\'
+            self.min_input = '\\\\Seo3\\同花顺港股版\\history\\hz\\min\\' #'D:\\同花顺软件\\同花顺港股版\\history\hz\min\\'
             self.conn = MyUtil.get_conn('stock_data')
             #self.min_input='D:\\tools\\Tools\\2017年12月\\2017-12-18\\min\\'
 
@@ -214,7 +214,7 @@ class Note:
             return
         while self.isRun:
             # min文件目录
-            filename=['HSIc1.min']  # filename = os.listdir(min_input)
+            filename=['HSIc1.min','HSIc2.min','HSIc3.min','HSIc4.min','HHIc1.min','HHIc2.min','HHIc3.min','HHIc4.min']  # filename = os.listdir(min_input)
             i = 0
             while i < len(filename):
                 strx = filename[i]
