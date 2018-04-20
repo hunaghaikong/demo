@@ -5,7 +5,7 @@ import re
 import configparser
 
 config=configparser.ConfigParser()
-config.read('conf.conf')
+config.read(r'D:\tools\Tools\EveryDay\demo\AndBefore_2018_3\conf.conf')
 
 def get_conn(dataName):
     return pymysql.connect(db=dataName,user=config['U']['us'],passwd=config['U']['ps'],host=config['U']['hs'],charset='utf8')
