@@ -207,6 +207,7 @@ class Note:
         self.isRun = True
         conn = self.conn
         min_input = self.min_input
+        self.to_sql_data(add=False)
         try:
             fileUpdateTime = {i: 0 for i in os.listdir(min_input)}
         except:
@@ -272,10 +273,12 @@ class Note:
                 prints = '文件：%s,  Last Time: %s\n' % (strx, this_time)
                 self.textpad.insert(1.0, prints)
                 self.textpad.update()
+                # 保存到合并数据表
+                if strx=='HSIc1.min':
+                    self.to_sql_data(add=True, start_time=this_time, end_time=str(datetime.now()))
 
             self.textpad.update()
             time.sleep(2)
-        conn.close()
 
 
     def thread_opens(self):
@@ -305,8 +308,41 @@ class Note:
                 self.textpad.insert(1.0, '删除成功！\n')
                 self.textpad.update()
 
+    def to_sql_data(self,add=True,start_time='2018-01-19', end_time=str(datetime.now())):
+        ''' 保存数据到合并数据库 '''
+        try:
+            cur = self.conn.cursor()
+            cur.execute(
+                "SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM carry_investment.futures_min WHERE datetime>='{}' AND datetime<='{}'".format(
+                    start_time, end_time))
+            d1 = list(cur.fetchall())
+            cur.execute(
+                "SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM stock_data.index_min WHERE CODE='HSIc1' AND datetime>='{}' AND datetime<='{}'".format(
+                    start_time, end_time))
+            d2 = cur.fetchall()
+            d2 = {i[0]: i[1:] for i in d2}
+            d3 = [i[0] for i in d1]
+            for d in d2:
+                if d not in d3:
+                    d1.append((d,) + d2[d])
+            d1.sort()
+            if not add:
+                sql = "truncate table handle_min"
+                cur.execute(sql)
+            for d in d1:
+                try:
+                    cur.execute(
+                        "INSERT INTO stock_data.handle_min(datetime,open,high,low,close,vol) values(%s,%s,%s,%s,%s,%s)",
+                        (d[0], d[1], d[2], d[3], d[4], d[5]))
+                except Exception as exc:
+                    #print(exc)
+                    continue
+        finally:
+            self.conn.commit()
+
     def stops(self, t=None):
         self.isRun = False
+        self.conn.close()
 
     def about(self):
         showinfo('版权信息', '凯瑞投资有限公司!')
