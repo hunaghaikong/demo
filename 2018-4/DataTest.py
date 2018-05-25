@@ -1,7 +1,5 @@
-import pymysql
 import pandas as pd
-import numpy as np
-import os
+
 
 from AndBefore_2018_3 import MyUtil
 
@@ -111,16 +109,27 @@ class Data:
         return da
 
     def insertSql(da,conn=None,sql=None):
-        if not conn:
+        if conn is None:
             conn=MyUtil.get_conn('stock_data')
         cur=conn.cursor()
-        if not sql:
+        if sql is None:
             sql="INSERT INTO handle_min(datetime,open,high,low,close) values(%s,%s,%s,%s,%s)"
 
         #从数据库查询最大更新时间
         #cur.execute('select max(datetime) from handle_min')
         #max_dt=cur.fetchall()[0][0]
 
-        for k,v in zip(da.index,da.values):
-            cur.execute(sql,(str(k),float(v[0]),float(v[1]),float(v[2]),float(v[3])))
+        cur.execute("TRUNCATE TABLE stock_data.handle_min")
         conn.commit()
+        for k,v in zip(da.index,da.values):
+
+            if v[0] > 0:
+                print(str(k), float(v[0]), float(v[1]), float(v[2]), float(v[3]))
+                cur.execute(sql,(str(k),float(v[0]),float(v[1]),float(v[2]),float(v[3])))
+        conn.commit()
+
+if __name__ == '__main__':
+    data = Data()
+    d = data.ohlc()
+    print(d)
+    data.insertSql(d)
