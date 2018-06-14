@@ -332,7 +332,7 @@ class Note:
             for d in d1:
                 try:
                     cur.execute(
-                        "INSERT INTO stock_data.handle_min(datetime,open,high,low,close,vol) values(%s,%s,%s,%s,%s,%s)",
+                        "INSERT INTO carry_investment.handle_min(datetime,open,high,low,close,vol) values(%s,%s,%s,%s,%s,%s)",
                         (d[0], d[1], d[2], d[3], d[4], d[5]))
                 except Exception as exc:
                     #print(exc)
