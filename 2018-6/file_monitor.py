@@ -2,35 +2,35 @@ import os
 import win32file
 import datetime
 import win32con
+import threading
 
 import wh_dat
 
-""" 
-监听某目录的文件，如果文件有更新，则调用函数读取已经更新的
-文件，被调用的函数wh_dat.main会把更新的数据存储到数据库 
-"""
+def main():
+    """ 
+    监听某目录的文件，如果文件有更新，则调用函数读取已经更新的
+    文件，被调用的函数wh_dat.main会把更新的数据存储到数据库 
+    """
+    ACTIONS = {
+        1: "Created",
+        2: "Deleted",
+        3: "Updated",
+        4: "Renamed from something",
+        5: "Renamed to something"
+    }
 
-ACTIONS = {
-    1: "Created",
-    2: "Deleted",
-    3: "Updated",
-    4: "Renamed from something",
-    5: "Renamed to something"
-}
+    FILE_LIST_DIRECTORY = win32con.GENERIC_READ | win32con.GENERIC_WRITE
+    path_to_watch = r'C:\wh6模拟版\Data\恒生期指\min1'  # 要监听文件的路径
+    hDir = win32file.CreateFile(
+        path_to_watch,
+        FILE_LIST_DIRECTORY,
+        win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE,
+        None,
+        win32con.OPEN_EXISTING,
+        win32con.FILE_FLAG_BACKUP_SEMANTICS,
+        None
+    )
 
-FILE_LIST_DIRECTORY = win32con.GENERIC_READ | win32con.GENERIC_WRITE
-path_to_watch = r'C:\wh6模拟版\Data\恒生期指\min1'  # 要监听文件的路径
-hDir = win32file.CreateFile(
-    path_to_watch,
-    FILE_LIST_DIRECTORY,
-    win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE,
-    None,
-    win32con.OPEN_EXISTING,
-    win32con.FILE_FLAG_BACKUP_SEMANTICS,
-    None
-)
-
-if __name__ == '__main__':
     while 1:
         results = win32file.ReadDirectoryChangesW(
             hDir,  # handle(句柄)：要监视的目录的句柄。这个目录必须用 FILE_LIST_DIRECTORY 访问权限打开。 
@@ -51,3 +51,9 @@ if __name__ == '__main__':
             if status == "Updated":
                 insert_size = wh_dat.main(full_filename)
                 print(str(datetime.datetime.now())[:19], ' Update {} data to the MySQL database.'.format(insert_size))
+
+if __name__ == '__main__':
+    t1=threading.Thread(target=main)
+    t2=threading.Thread(target=wh_dat.runs)
+    t1.start()
+    t2.start()

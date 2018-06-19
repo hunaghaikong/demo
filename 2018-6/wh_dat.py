@@ -3,6 +3,9 @@ import os
 import sys
 import time
 import datetime
+import win32api
+import win32con
+import win32gui
 from collections import namedtuple, deque, OrderedDict
 
 try:
@@ -135,6 +138,46 @@ def main(to_file=None):
     conn.close()
 
     return insert_size
+
+def sbdj(x,y,enter=None):
+    """ 鼠标左击 与 按回车键 """
+    win32api.SetCursorPos([x,y])    #为鼠标焦点设定一个位置
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0,0,0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0,0,0)
+    #win32api.keybd_event(0,0,win32con.KEYEVENTF_KEYUP,0)
+    if enter is not None:
+        # 按下回车键
+        time.sleep(0.1)
+        win32api.keybd_event(13,0,0,0)
+        win32api.keybd_event(13,0,win32con.KEYEVENTF_KEYUP,0)
+
+def get_ct():
+    """ 获取所有Windows打开的窗体 """
+    titles = set()
+    def foo(hwnd, mouse):
+        # 去掉下面这句就能获取所有，但是我不需要那么多
+        if IsWindow(hwnd) and IsWindowEnabled(hwnd) and IsWindowVisible(hwnd):
+            titles.add(GetWindowText(hwnd))
+    EnumWindows(foo, 0)
+    return titles
+
+def runs():
+    """ 循环点击文华财经以刷新本地文件 """
+    #time.sleep(12)
+    DialogName = '赢顺云交易 － Ver6.7.810      文华云节点-模拟联通2      nymex'
+    win = win32gui.FindWindow(None,DialogName)
+    counts = 0
+    while win == 0: # 若窗口没打开，则过一秒后再次检查
+        time.sleep(1)
+        win = win32gui.FindWindow(None,DialogName)
+        counts += 1
+    aj=OrderedDict({'wp':(16,330), 'wpzlhy':(906,999), 'hz=':(131,94), 'min1':(260,35), 'back_off':(19,31)})
+    while 1:
+        for i in aj:
+            if i == 'back_off':
+                time.sleep(10)
+            sbdj(*aj[i])
+        time.sleep(50)
 
 
 if __name__ == '__main__':
