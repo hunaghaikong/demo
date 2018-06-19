@@ -6,7 +6,9 @@ import datetime
 import win32api
 import win32con
 import win32gui
+import pyautogui as pag
 from collections import namedtuple, deque, OrderedDict
+from win32gui import IsWindow,IsWindowEnabled,IsWindowVisible,GetWindowText,EnumWindows
 
 try:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -163,21 +165,24 @@ def get_ct():
 
 def runs():
     """ 循环点击文华财经以刷新本地文件 """
-    #time.sleep(12)
-    DialogName = '赢顺云交易 － Ver6.7.810      文华云节点-模拟联通2      nymex'
-    win = win32gui.FindWindow(None,DialogName)
-    counts = 0
-    while win == 0: # 若窗口没打开，则过一秒后再次检查
+    cts = get_ct()
+    while '赢顺云交易' not in ''.join(cts): # 若窗口没打开，则过一秒后再次检查
         time.sleep(1)
-        win = win32gui.FindWindow(None,DialogName)
-        counts += 1
+        cts = get_ct()
+    d2=[i for i in cts if '赢顺云交易' in i][0]
+    win = win32gui.FindWindow(None,d2)
     aj=OrderedDict({'wp':(16,330), 'wpzlhy':(906,999), 'hz=':(131,94), 'min1':(260,35), 'back_off':(19,31)})
     while 1:
+        x,y=pag.position()  # 原来鼠标坐标
+        win32gui.ShowWindow(win,win32con.SW_MAXIMIZE) # 全屏
         for i in aj:
             if i == 'back_off':
-                time.sleep(10)
+                time.sleep(0.1)
             sbdj(*aj[i])
-        time.sleep(50)
+        else:
+            win32gui.CloseWindow(win) # 最小化
+            win32api.SetCursorPos([x,y])  #为鼠标还原到原来的坐标
+        time.sleep(300)
 
 
 if __name__ == '__main__':
