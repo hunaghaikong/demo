@@ -174,6 +174,7 @@ def runs():
     aj=OrderedDict({'wp':(16,330), 'wpzlhy':(906,999), 'hz=':(131,94), 'min1':(260,35), 'back_off':(19,31)})
     while 1:
         x,y=pag.position()  # 原来鼠标坐标
+        #win32gui.SetForegroundWindow(win) # 指定句柄设置为前台，也就是激活
         win32gui.ShowWindow(win,win32con.SW_MAXIMIZE) # 全屏
         for i in aj:
             if i == 'back_off':
@@ -181,7 +182,10 @@ def runs():
             sbdj(*aj[i])
         else:
             win32gui.CloseWindow(win) # 最小化
+            #win32gui.SetBkMode(win, win32con.TRANSPARENT) # 设置为后台
             win32api.SetCursorPos([x,y])  #为鼠标还原到原来的坐标
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
         time.sleep(300)
 
 
