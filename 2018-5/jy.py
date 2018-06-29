@@ -114,7 +114,8 @@ class HS:
                     """
         res = []
         ind = 0
-        is_ind = -1
+        is_ind = 0
+        ind_add = 0
         cbyl = 0
         dts = self.datas()
         dts.send(None)
@@ -145,13 +146,25 @@ class HS:
             jlr = round(data['all'] * self.hy[msg[3][:3]] - self.SXF[msg[3][:3]] * data['all_jy_add'], 2)  # 净利润
             jpjlr = round(jlr / data['wcds'], 2) if data['wcds'] > 0 else 0  # 净平均利润
 
-            if ind != is_ind or (ind == is_ind and data['jy'] == 0):
-                res.append(
-                    [msg[3], data['time'], msg[0], pri, data['jy'], yscb, cb, jcb, cbyl, data['pcyl_all'], data['all'],
-                     pjyl,
-                     huihuapj, zcb, jzcb, data['all'] * self.hy[msg[3][:3]], jlr, jpjlr,
-                     round(self.SXF[msg[3][:3]] * data['all_jy_add'], 2), data['wcds'], data['dbs']])
+            if ind != is_ind:
+                # ['合约', '时间', '开仓', '当前价', '持仓', '原始成本', '会话成本', '净会话成本',
+                # '此笔盈利', '会话盈利', '总盈利', '总平均盈利', '会话平均盈利', '持仓成本', '净持仓成本', '利润',
+                # '净利润', '净平均利润', '手续费', '已平仓', '序号']
+                res.append([msg[3], data['time'], msg[0], pri, data['jy'], yscb, cb, jcb,
+                            cbyl, data['pcyl_all'], data['all'],pjyl,huihuapj, zcb, jzcb, data['all'] * self.hy[msg[3][:3]],
+                            jlr, jpjlr,round(self.SXF[msg[3][:3]] * data['all_jy_add'], 2), data['wcds'], data['dbs']])
                 cbyl = 0
+                ind_add = 0
+            elif ind == is_ind and data['jy'] == 0:
+                ind_add += 1
+                kaicang = ind_add if msg[0]>0 else -ind_add
+                res.append([msg[3], data['time'], kaicang, pri, data['jy'], yscb, cb, jcb,
+                            cbyl, data['pcyl_all'], data['all'], pjyl, huihuapj, zcb, jzcb,data['all'] * self.hy[msg[3][:3]],
+                            jlr, jpjlr, round(self.SXF[msg[3][:3]] * data['all_jy_add'], 2), data['wcds'], data['dbs']])
+                cbyl = 0
+                ind_add = 0
+            else:
+                ind_add += 1
             data['dbs'] += 1 if data['jy'] == 0 else 0  # 序号
             is_ind = ind
         return res

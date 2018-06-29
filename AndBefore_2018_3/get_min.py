@@ -207,7 +207,7 @@ class Note:
         self.isRun = True
         conn = self.conn
         min_input = self.min_input
-        self.to_sql_data(add=False)
+        #self.to_sql_data(add=False)
         try:
             fileUpdateTime = {i: 0 for i in os.listdir(min_input)}
         except:
@@ -308,7 +308,7 @@ class Note:
                 self.textpad.insert(1.0, '删除成功！\n')
                 self.textpad.update()
 
-    def to_sql_data(self,add=True,start_time='2018-01-19', end_time=str(datetime.now())):
+    def to_sql_data(self,add=False,start_time='2018-01-19', end_time=str(datetime.now())):
         ''' 保存数据到合并数据库 '''
         try:
             cur = self.conn.cursor()
@@ -317,7 +317,7 @@ class Note:
                     start_time, end_time))
             d1 = list(cur.fetchall())
             cur.execute(
-                "SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM stock_data.index_min WHERE CODE='HSIc1' AND datetime>='{}' AND datetime<='{}'".format(
+                "SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM carry_investment.wh_min WHERE datetime>='{}' AND datetime<='{}'".format(
                     start_time, end_time))
             d2 = cur.fetchall()
             d2 = {i[0]: i[1:] for i in d2}
@@ -327,16 +327,19 @@ class Note:
                     d1.append((d,) + d2[d])
             d1.sort()
             if not add:
-                sql = "truncate table handle_min"
+                sql = "truncate table carry_investment.handle_min"
                 cur.execute(sql)
+                self.conn.commit()
             for d in d1:
                 try:
                     cur.execute(
                         "INSERT INTO carry_investment.handle_min(datetime,open,high,low,close,vol) values(%s,%s,%s,%s,%s,%s)",
                         (d[0], d[1], d[2], d[3], d[4], d[5]))
                 except Exception as exc:
-                    #print(exc)
+                    print(exc)
                     continue
+            self.textpad.insert(1.0, '更新成功！\n')
+            self.textpad.update()
         finally:
             self.conn.commit()
 
@@ -358,6 +361,7 @@ class Note:
         filemenu.add_command(label='停止', accelerator='Ctrl+t', command=self.stops)
         filemenu.add_command(label='退出', accelerator='Ctrl+q', command=self.tuichu)
         filemenu.add_command(label='删除', command=self.deletes)
+        filemenu.add_command(label='更新数据', command=self.to_sql_data)
         menubar.add_cascade(label='操作', menu=filemenu)
         self.root.bind_all('<Control-o>', self.opens)  # 开始
         self.root.bind('<Control-t>', self.stops)

@@ -49,11 +49,16 @@ def main():
             status = ACTIONS.get(action, "Unknown")
             print(full_filename, status)
             if status == "Updated":
-                insert_size = wh_dat.main(full_filename)
-                print(str(datetime.datetime.now())[:19], ' Update {} data to the MySQL database.'.format(insert_size))
+                insert_size = whcj.main(full_filename)
+                if insert_size is not None:
+                    print(str(datetime.datetime.now())[:19], ' Update {} data to the MySQL database.'.format(insert_size))
+                else:
+                    print(str(datetime.datetime.now())[:19], '字典里没有此文件！')
 
 if __name__ == '__main__':
+    # 初始化文华财经类
+    whcj = wh_dat.WHCJ()
     t1=threading.Thread(target=main)
-    t2=threading.Thread(target=wh_dat.runs)
+    t2=threading.Thread(target=whcj.runs)
     t1.start()
     t2.start()
