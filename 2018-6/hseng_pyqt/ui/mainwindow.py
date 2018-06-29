@@ -7,9 +7,6 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
-
-from data_handle import spec_handler
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -30,7 +27,7 @@ class Ui_MainWindow(object):
         self.widget.setMinimumSize(QtCore.QSize(1200, 30))
         self.widget.setObjectName("widget")
         self.layoutWidget = QtWidgets.QWidget(self.widget)
-        self.layoutWidget.setGeometry(QtCore.QRect(224, 0, 531, 29))
+        self.layoutWidget.setGeometry(QtCore.QRect(0, 0, 341, 29))
         self.layoutWidget.setObjectName("layoutWidget")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.layoutWidget)
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -62,17 +59,37 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.comboBox)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.pushButton_order = QtWidgets.QPushButton(self.layoutWidget)
-        self.pushButton_order.setObjectName("pushButton_order")
-        self.horizontalLayout.addWidget(self.pushButton_order)
-        self.pushButton_acc_info = QtWidgets.QPushButton(self.layoutWidget)
-        self.pushButton_acc_info.setObjectName("pushButton_acc_info")
-        self.horizontalLayout.addWidget(self.pushButton_acc_info)
         self.pushButton_console = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton_console.setObjectName("pushButton_console")
         self.horizontalLayout.addWidget(self.pushButton_console)
         self.horizontalLayout_2.addLayout(self.horizontalLayout)
-
+        self.layoutWidget1 = QtWidgets.QWidget(self.widget)
+        self.layoutWidget1.setGeometry(QtCore.QRect(650, 0, 381, 25))
+        self.layoutWidget1.setObjectName("layoutWidget1")
+        self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.layoutWidget1)
+        self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.label = QtWidgets.QLabel(self.layoutWidget1)
+        self.label.setObjectName("label")
+        self.horizontalLayout_5.addWidget(self.label)
+        self.lineEdit_Symbol = QtWidgets.QLineEdit(self.layoutWidget1)
+        self.lineEdit_Symbol.setObjectName("lineEdit_Symbol")
+        self.horizontalLayout_5.addWidget(self.lineEdit_Symbol)
+        self.horizontalLayout_7.addLayout(self.horizontalLayout_5)
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+        self.label_2 = QtWidgets.QLabel(self.layoutWidget1)
+        self.label_2.setObjectName("label_2")
+        self.horizontalLayout_6.addWidget(self.label_2)
+        self.lineEdit_TradeSymbol = QtWidgets.QLineEdit(self.layoutWidget1)
+        self.lineEdit_TradeSymbol.setObjectName("lineEdit_TradeSymbol")
+        self.horizontalLayout_6.addWidget(self.lineEdit_TradeSymbol)
+        self.horizontalLayout_7.addLayout(self.horizontalLayout_6)
+        self.pushButton_ChangeSymbol = QtWidgets.QPushButton(self.layoutWidget1)
+        self.pushButton_ChangeSymbol.setObjectName("pushButton_ChangeSymbol")
+        self.horizontalLayout_7.addWidget(self.pushButton_ChangeSymbol)
         self.verticalLayout.addWidget(self.widget)
         self.QVBoxLayout_ohlc = QtWidgets.QVBoxLayout()
         self.QVBoxLayout_ohlc.setObjectName("QVBoxLayout_ohlc")
@@ -94,20 +111,20 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+        self.label.setBuddy(self.lineEdit_Symbol)
+        self.label_2.setBuddy(self.lineEdit_TradeSymbol)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def changeTitle(self):
-        print(spec_handler.faNumber)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton_TEST.setText(_translate("MainWindow", "TEST"))
-        self.pushButton_order.setText(_translate("MainWindow", "order"))
-        self.pushButton_acc_info.setText(_translate("MainWindow", "acc_info"))
         self.pushButton_console.setText(_translate("MainWindow", "console"))
+        self.label.setText(_translate("MainWindow", "Symbol:"))
+        self.label_2.setText(_translate("MainWindow", "trade_symbol:"))
+        self.pushButton_ChangeSymbol.setText(_translate("MainWindow", "goto"))
 
 from data_visualize.OHLC_ui import OHlCWidget
 from data_visualize.baseitems import ComboCheckBox

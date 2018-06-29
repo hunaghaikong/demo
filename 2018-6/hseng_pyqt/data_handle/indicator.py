@@ -10,7 +10,6 @@
 
 
 from data_fetch.market_data import OHLC
-from util import H_logger
 import pandas as pd
 from data_handle import handle_base
 
@@ -19,6 +18,7 @@ class indicator_base(handle_base):
     def __init__(self, name, **kwargs):
         self.name = name
         super(indicator_base, self).__init__('Indicator', **kwargs)
+
 
 class MACD(indicator_base):
     def __init__(self, short=12, long=26, m=9):
@@ -29,8 +29,8 @@ class MACD(indicator_base):
 
     def calc(self):
         self._close = self.data.close
-        self._diff = self._close.ewm(span=self._short).mean() - self._close.ewm(span=self._long).mean()
-        self._dea = self._diff.ewm(span=self._m).mean()
+        self._diff = self._close.ewm(self._short).mean() - self._close.ewm(self._long).mean()
+        self._dea = self._diff.ewm(self._m).mean()
         self._macd = (self._diff - self._dea) * 2
 
     @property
@@ -109,7 +109,7 @@ class STD(indicator_base):
 
 if __name__ == '__main__':
     _df = OHLC('2017-12-15', '2017-12-18', 'HSIc1')
-    _macd = MACD(_df)
-    _ma = MA(_df, 10, 20, 30)
+    _macd = MACD()
+    _ma = MA(10, 20, 30)
     print(_macd)
     print(_ma)

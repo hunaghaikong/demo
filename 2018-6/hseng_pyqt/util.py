@@ -10,12 +10,10 @@
 """
 import datetime as dt
 from dateutil.parser import parse
-import numpy as np
-from pandas import Timestamp
 import configparser
+from pandas import Timestamp
 import logging.config
 import os
-import datetime
 
 from DataIndex import ZB
 
@@ -43,8 +41,7 @@ SYMBOL = server_conf.get('CONTRACT_NAME','symbol')
 SCHEME_NAME = server_conf.get('SCHEME_NAME','name')
 
 # 日志的配置
-
-logging.config.fileConfig(os.path.join('conf','log.conf'), disable_existing_loggers=False)
+logging.config.fileConfig(os.path.join('conf', 'log.conf'), disable_existing_loggers=False)
 A_logger = logging.getLogger('root')
 F_logger = logging.getLogger('root.data_fetch')
 H_logger = logging.getLogger('root.data_handle')
@@ -71,20 +68,21 @@ MONTH_LETTER_MAPS = {1: 'F',
                      12: 'Z'
                      }
 
+
 # 确定需要展示的K线范围
-def date_range(type, **kwargs):
+def date_range(type_, **kwargs):
     """
     初始化展示日期
-    :param type: 'present'为当前行情，'history'
-    :param args: type为'present'时，bar_num为1min的bar条数
+    :param type_: 'present'为当前行情，'history'
+    :param kwargs: type为'present'时，bar_num为1min的bar条数
                  type为'history'时，start为开始的分钟，end为结束的分钟,bar_num为偏移的分钟数
     :return: start_time, end_time
     """
-    if type == 'present':
+    if type_ == 'present':
         min_bar = kwargs['bar_num']
         start_time = dt.datetime.now() - dt.timedelta(minutes=min_bar)
         end_time = dt.datetime.now() + dt.timedelta(minutes=10)
-    elif type == 'history':
+    elif type_ == 'history':
         if kwargs.get('bar_num'):
             t_delta = dt.timedelta(minutes=kwargs.get('bar_num'))
             start_time = parse(kwargs['start']) if kwargs.get('start') else parse(kwargs['end']) - t_delta
@@ -97,16 +95,19 @@ def date_range(type, **kwargs):
     A_logger.info(f'初始化{type}数据数据范围:<{start_time}>-<{end_time}>')
     return start_time, end_time
 
-def symbol(code_prefix, type='futures', **kwargs):
-    if type == 'futures':
+
+def symbol(code_prefix, type_='futures', **kwargs):
+    if type_ == 'futures':
         m_code = MONTH_LETTER_MAPS[kwargs.get('month')] if kwargs.get('month') else MONTH_LETTER_MAPS[dt.datetime.now().month]
         y_code = kwargs['year'][-1] if kwargs.get('year') else str(dt.datetime.now().year)[-1]
         Symbol = code_prefix + m_code + y_code  # 根据当前时间生成品种代码
         A_logger.info(f'初始化symbol代码-{Symbol}')
         return Symbol
 
+
 def print_tick(new_ticker):
     print(f'tickertime: {new_ticker.TickerTime}-price: {new_ticker.Price}-qty: {new_ticker.Qty}')
+
 
 def help_doc():
     text = f'''主要命名空间：ohlc, tick_datas,trade_datas, win
@@ -125,7 +126,6 @@ def help_doc():
     '''
     print(text)
     return
-
 
 class Zbjs(ZB):
     def __init__(self,df):
@@ -158,4 +158,3 @@ class Zbjs(ZB):
                     buysell[Timestamp(i[0])] = 1 if i[2] == '多' else -1
                     buysell[Timestamp(i[1])] = 2 if i[2] == '空' else -2
         return buysell
-
