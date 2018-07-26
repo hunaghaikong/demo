@@ -135,7 +135,7 @@ class Zbjs(ZB):
         import pymysql
         conn = pymysql.connect(host=KAIRUI_MYSQL_HOST, user=KAIRUI_MYSQL_USER,password=KAIRUI_MYSQL_PASSWD, charset='utf8',db='carry_investment')
         cur=conn.cursor()
-        sql = "SELECT datetime,open,high,low,close FROM futures_min WHERE datetime>='{}' AND datetime<='{}'".format(time1, time2)
+        sql = "SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM wh_same_month_min WHERE prodcode='HSI' AND datetime>='{}' AND datetime<='{}'".format(time1, time2)
         cur.execute(sql)
         self.zdata = cur.fetchall()  # [(d[0], d[1], d[2], d[3], d[4]) for d in df.values]
         #print(self.zdata)

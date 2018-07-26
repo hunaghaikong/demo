@@ -20,7 +20,7 @@ def main():
     }
 
     FILE_LIST_DIRECTORY = win32con.GENERIC_READ | win32con.GENERIC_WRITE
-    path_to_watch = r'C:\wh6模拟版\Data\恒生期指\min1'  # 要监听文件的路径
+    path_to_watch = r'C:\wh6模拟版\Data\恒生期指'  # 要监听文件的路径
     hDir = win32file.CreateFile(
         path_to_watch,
         FILE_LIST_DIRECTORY,
@@ -48,7 +48,7 @@ def main():
             full_filename = os.path.join(path_to_watch, file)
             status = ACTIONS.get(action, "Unknown")
             print(full_filename, status)
-            if status == "Updated":
+            if status == "Updated" and '.dat' in full_filename:
                 insert_size = whcj.main(full_filename)
                 if insert_size is not None:
                     print(str(datetime.datetime.now())[:19], ' Update {} data to the MySQL database.'.format(insert_size))

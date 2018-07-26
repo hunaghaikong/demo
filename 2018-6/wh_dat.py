@@ -50,7 +50,8 @@ class WHCJ:
         # 7234 # HHI 00034214.dat
         self.same_month = {'00034182.dat': 'HSI', '00034233.dat': 'MHI', '00034214.dat': 'HHI'}
 
-    def transfer(self,files):
+    def transfer_min1(self,files):
+        ''' 解析一分钟数据 '''
         contrast = None
         with open(files, 'rb') as f:
             buf = f.read()
@@ -79,10 +80,45 @@ class WHCJ:
                 if dd < contrast or t.days > 100:
                     break
                 contrast = dd
-                yield [dd, openPrice, high, low, close, vol, amount]
+                yield [dd, openPrice, high, low, close, vol, amount, a[7], a[8]]
             else:
                 contrast = dd
-                yield [dd, openPrice, high, low, close, vol, amount]
+                yield [dd, openPrice, high, low, close, vol, amount, a[7], a[8]]
+
+    def transfer_day(self,files):
+        ''' 解析日线数据 '''
+        contrast = None
+        with open(files, 'rb') as f:
+            buf = f.read()
+        num = len(buf)
+        no = num / 37 
+        b = 0
+        e = 37
+
+        for i in range(int(no) - 1):
+            a = unpack('iffffffffB', buf[b:e])
+            dd = a[0]
+            openPrice = a[1]
+            close = a[2]
+            high = a[3]
+            low = a[4]
+            vol = a[5]
+            amount = a[6]
+
+            dd = time.localtime(dd)
+            dd = datetime.datetime(*dd[:6])
+
+            b += 37  # 32
+            e += 37  # 32
+            if i != 0:
+                t = dd - contrast
+                if dd < contrast or t.days > 100:
+                    break
+                contrast = dd
+                yield [dd, openPrice, high, low, close, vol, amount, a[7], a[8]]
+            else:
+                contrast = dd
+                yield [dd, openPrice, high, low, close, vol, amount, a[7], a[8]]
 
 
     def to_sql(self,conn, data):
@@ -107,20 +143,28 @@ class WHCJ:
         cur = self.conn.cursor()
         count = 0
         insert_size = 0
-        if dat in self.hsi:
+        folder = file_path.split('\\')[-2]
+        if folder == 'min1' and dat in self.hsi:
             code = self.hsi[dat].code
-            sql = "INSERT INTO wh_min(prodcode,datetime,open,high,low,close,vol) VALUES(%s,%s,%s,%s,%s,%s,%s)"
-        elif dat in self.same_month:
+            next_data = self.transfer_min1(file_path)
+            sql = "INSERT INTO wh_min(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        elif folder == 'min1' and dat in self.same_month:
             code = self.same_month[dat]
-            sql = "INSERT INTO wh_same_month_min(prodcode,datetime,open,high,low,close,vol) VALUES(%s,%s,%s,%s,%s,%s,%s)"
+            next_data = self.transfer_min1(file_path)
+            sql = "INSERT INTO wh_same_month_min(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        elif folder == 'day' and dat in self.same_month:
+            code = self.same_month[dat]
+            next_data = self.transfer_day(file_path)
+            sql = "INSERT INTO wh_same_month_day(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         else:
             return None
 
-        for i in self.transfer(file_path):
+        # 保存到数据库
+        for i in next_data:
             if code_time and i[0] <= code_time[1]:
                 continue
             try:
-                cur.execute(sql, (code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5]))
+                cur.execute(sql, (code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]))
                 insert_size += 1
             except Exception as exc:
                 print(exc)
@@ -139,10 +183,12 @@ class WHCJ:
         dat = to_file.split('\\')[-1] if to_file else 0
 
         cur = self.conn.cursor()
-        if dat in same_month:
+        if to_file.split('\\')[-2] == 'min1' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min WHERE prodcode='%s' ORDER BY datetime DESC LIMIT 1"%same_month[dat]
-        else:
+        elif to_file.split('\\')[-2] == 'min1' and dat in hsi:
             code_time_sql = "SELECT prodcode,datetime FROM wh_min ORDER BY datetime DESC LIMIT 1"
+        elif to_file.split('\\')[-2] == 'day' and dat in same_month:
+            code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_day ORDER BY datetime DESC LIMIT 1"
         cur.execute(code_time_sql)
         code_time = cur.fetchone()
         self.conn.commit()
@@ -232,7 +278,7 @@ class WHCJ:
             t_min = t.tm_hour*60+t.tm_min
             if t.tm_hour == 12 or (16*60+30<t_min<17*60+15) or (0<t_min<9*60+15):
                 continue
-            names = {'7207':'HSIN8','7214':'HSI', '7253':'MHI', '7234':'HHI'}  # 要更新的产品代码
+            names = {'7207':'HSIN8', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
             for name in names:
                 if names[name] != 'HSI':
                     if t2-start_time<600:
