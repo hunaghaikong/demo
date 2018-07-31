@@ -1,16 +1,17 @@
-from struct import unpack
+
 import os
 import sys
 import time
-import datetime
 import win32api
 import win32con
 import win32gui
-import pyautogui as pag
-from collections import namedtuple, deque, OrderedDict
-from win32gui import IsWindow,IsWindowEnabled,IsWindowVisible,GetWindowText,EnumWindows
 import pymouse
 import pykeyboard
+from datetime import datetime
+import pyautogui as pag
+from struct import unpack
+from collections import namedtuple, deque, OrderedDict
+from win32gui import IsWindow,IsWindowEnabled,IsWindowVisible,GetWindowText,EnumWindows
 from pymouse import PyMouse
 from pykeyboard import PyKeyboard
 from ctypes import windll as win32
@@ -48,7 +49,10 @@ class WHCJ:
         # 7214 # HSI 00034182.dat
         # 7253 # MHI 00034233.dat
         # 7234 # HHI 00034214.dat
+        # 恒生期货当月
         self.same_month = {'00034182.dat': 'HSI', '00034233.dat': 'MHI', '00034214.dat': 'HHI'}
+        # 恒生指数
+        self.index = {'00033906.dat':'HSI'}
 
     def transfer_min1(self,files):
         ''' 解析一分钟数据 '''
@@ -70,8 +74,7 @@ class WHCJ:
             vol = a[5]
             amount = a[6]
 
-            dd = time.localtime(dd)
-            dd = datetime.datetime(*dd[:6])
+            dd = datetime.fromtimestamp(dd)
 
             b += 36  # 32
             e += 36  # 32
@@ -105,8 +108,7 @@ class WHCJ:
             vol = a[5]
             amount = a[6]
 
-            dd = time.localtime(dd)
-            dd = datetime.datetime(*dd[:6])
+            dd = datetime.fromtimestamp(dd)
 
             b += 37  # 32
             e += 37  # 32
@@ -152,6 +154,10 @@ class WHCJ:
             code = self.same_month[dat]
             next_data = self.transfer_min1(file_path)
             sql = "INSERT INTO wh_same_month_min(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        elif folder == 'min1' and dat in self.index:
+            code = self.index[dat]
+            next_data = self.transfer_min1(file_path)
+            sql = "INSERT INTO wh_index_min(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         elif folder == 'day' and dat in self.same_month:
             code = self.same_month[dat]
             next_data = self.transfer_day(file_path)
@@ -177,8 +183,9 @@ class WHCJ:
         """ to_file: 如果有传入to_file，则只使用to_file这个文件更新数据库，否则检查所有指定文件并更新到数据库"""
         dirs = r'C:\wh6模拟版\Data\恒生期指\min1'
 
-        t = datetime.datetime.now()
+        t = datetime.now()
         hsi = self.hsi
+        index = self.index
         same_month = self.same_month
         dat = to_file.split('\\')[-1] if to_file else 0
 
@@ -187,6 +194,8 @@ class WHCJ:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min WHERE prodcode='%s' ORDER BY datetime DESC LIMIT 1"%same_month[dat]
         elif to_file.split('\\')[-2] == 'min1' and dat in hsi:
             code_time_sql = "SELECT prodcode,datetime FROM wh_min ORDER BY datetime DESC LIMIT 1"
+        elif to_file.split('\\')[-2] == 'min1' and dat in index:
+            code_time_sql = "SELECT prodcode,datetime FROM wh_index_min ORDER BY datetime DESC LIMIT 1"
         elif to_file.split('\\')[-2] == 'day' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_day ORDER BY datetime DESC LIMIT 1"
         cur.execute(code_time_sql)
@@ -278,9 +287,9 @@ class WHCJ:
             t_min = t.tm_hour*60+t.tm_min
             if t.tm_hour == 12 or (16*60+30<t_min<17*60+15) or (0<t_min<9*60+15):
                 continue
-            names = {'7207':'HSIN8', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
+            names = {'7208':'HSIQ8', '7121':'HSI', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
             for name in names:
-                if names[name] != 'HSI':
+                if name != '7214':
                     if t2-start_time<600:
                         continue
                     else:

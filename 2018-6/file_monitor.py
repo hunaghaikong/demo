@@ -20,7 +20,7 @@ def main():
     }
 
     FILE_LIST_DIRECTORY = win32con.GENERIC_READ | win32con.GENERIC_WRITE
-    path_to_watch = r'C:\wh6模拟版\Data\恒生期指'  # 要监听文件的路径
+    path_to_watch = r'C:\wh6模拟版\Data'  # 要监听文件的路径
     hDir = win32file.CreateFile(
         path_to_watch,
         FILE_LIST_DIRECTORY,
