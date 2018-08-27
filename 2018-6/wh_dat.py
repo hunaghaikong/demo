@@ -198,6 +198,8 @@ class WHCJ:
             code_time_sql = "SELECT prodcode,datetime FROM wh_index_min ORDER BY datetime DESC LIMIT 1"
         elif to_file.split('\\')[-2] == 'day' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_day ORDER BY datetime DESC LIMIT 1"
+        else:
+            return
         cur.execute(code_time_sql)
         code_time = cur.fetchone()
         self.conn.commit()
