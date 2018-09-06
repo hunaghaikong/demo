@@ -26,8 +26,12 @@ class User32:
 if __name__ == '__main__':
     u32 = User32()
     t = time.localtime().tm_hour
-    while t != 20:
+    while 1:
         t2 = time.localtime().tm_hour
+        if 8 > t or t > 18:
+            u32.close_screen()
+            time.sleep(60 * 60)
+            continue
         if t == t2:
             time.sleep(60 * 5)
             continue
