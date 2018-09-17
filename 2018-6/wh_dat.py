@@ -22,7 +22,7 @@ try:
     sys.path.append(BASE_DIR)
     from MyUtil import get_conn
 except:
-    from conn import get_conn
+    from myconn.myconn import get_conn
 
 """
 读取文华财经dat数据，并存储到数据库
@@ -55,7 +55,7 @@ class WHCJ:
         self.index = {'00033906.dat':'HSI'}
 
     def transfer_min1(self,files):
-        ''' 解析一分钟数据 '''
+        ''' 解析一分钟、五分钟数据 '''
         contrast = None
         with open(files, 'rb') as f:
             buf = f.read()
@@ -162,6 +162,10 @@ class WHCJ:
             code = self.same_month[dat]
             next_data = self.transfer_day(file_path)
             sql = "INSERT INTO wh_same_month_day(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+        elif folder == 'min5' and dat in self.same_month:
+            code = self.same_month[dat]
+            next_data = self.transfer_min1(file_path)
+            sql = "INSERT INTO wh_same_month_min5(prodcode,datetime,open,high,low,close,vol,position,settlement,ratio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
         else:
             return None
 
@@ -198,6 +202,8 @@ class WHCJ:
             code_time_sql = "SELECT prodcode,datetime FROM wh_index_min ORDER BY datetime DESC LIMIT 1"
         elif to_file.split('\\')[-2] == 'day' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_day ORDER BY datetime DESC LIMIT 1"
+        elif to_file.split('\\')[-2] == 'min5' and dat in same_month:
+            code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min5 ORDER BY datetime DESC LIMIT 1"
         else:
             return
         cur.execute(code_time_sql)
