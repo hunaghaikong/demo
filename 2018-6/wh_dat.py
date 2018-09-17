@@ -258,7 +258,7 @@ class WHCJ:
             time.sleep(1)
             count += 1
             cts = self.get_ct()
-            if not count%20:
+            if not count%30:
                 os.system('taskkill /F /IM mytrader_wh.exe')
                 os.system('start C:\wh6模拟版\mytrader_wh.exe')
         d2 = [i for i in cts if '赢顺云交易' in i][0]
