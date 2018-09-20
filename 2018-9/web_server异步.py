@@ -1,22 +1,28 @@
 import asyncio
 from aiohttp import web
 
+"""
+web 异步服务端
+"""
+
 async def index(request):
-	await asyncio.sleep(0.5)
-	return web.json_response({'a':1}) #.Response(body=b'<h1>Index</h1>')
+    await asyncio.sleep(0.5)
+    return web.json_response({'a': 1})  # .Response(body=b'<h1>Index</h1>')
 
 
 async def hello(request):
-	await asyncio.sleep(0.5)
-	text='<h1>hello , %s!</h1>'%request.match_info['name']
-	return web.json_response({'name':request.match_info['name']}) #web.Response(body=text.encode('utf-8'))
+    await asyncio.sleep(0.5)
+    text = '<h1>hello , %s!</h1>' % request.match_info['name']
+    return web.json_response({'name': request.match_info['name']})  # web.Response(body=text.encode('utf-8'))
+
 
 async def init(loop):
-	app = web.Application(loop=loop)
-	app.router.add_route('GET','/',index)
-	app.router.add_route('GET','/hello/{name}', hello)
-	srv = await loop.create_server(app.make_handler(),'127.0.0.1',8008)
-	return srv
+    app = web.Application(loop=loop)
+    app.router.add_route('GET', '/', index)
+    app.router.add_route('GET', '/hello/{name}', hello)
+    srv = await loop.create_server(app.make_handler(), '127.0.0.1', 8008)
+    return srv
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(init(loop))
