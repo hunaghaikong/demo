@@ -295,15 +295,15 @@ class WHCJ:
             t_min = t.tm_hour*60+t.tm_min
             if t.tm_hour == 12 or (16*60+30<t_min<17*60+15) or (0<t_min<9*60+15):
                 continue
-            names = {'7209':'HSIU8', '7121':'HSI', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
+            names = {'7210':'HSIV8', '7121':'HSI', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
             for name in names:
                 if name != '7214':
-                    if t2-start_time<600:
+                    if t2-start_time < 600:
                         continue
                     else:
                         start_time = 1
 
-                print('更新产品：',names[name],'...')
+                print('更新产品：', names[name], '...')
                 for i in range(len(name)):
                     win32.user32.SendMessageW(hEdit, WM_CHAR, ord(name[i]), None)
                     time.sleep(0.1)
