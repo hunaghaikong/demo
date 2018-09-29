@@ -8,12 +8,14 @@
 """
 该文件存储一些基本的数据获取的字段名转换和基本的数据整理函数
 """
-import datetime as dt
+import datetime
 from dateutil.parser import parse
 import configparser
 from pandas import Timestamp
 import logging.config
 import os
+import math
+import pymongo
 
 from DataIndex import ZB
 
@@ -26,6 +28,8 @@ KAIRUI_MYSQL_PORT = server_conf.getint('MYSQL', 'port')
 KAIRUI_MYSQL_USER = server_conf.get('MYSQL', 'user')
 KAIRUI_MYSQL_PASSWD = server_conf.get('MYSQL', 'password')
 KAIRUI_MYSQL_DB = server_conf.get('MYSQL', 'db')
+
+KAIRUI_DB_TYPE = server_conf.get('DATABASE', 'databasetype')
 
 # 订阅数据的host与port
 ZMQ_SOCKET_HOST = server_conf.get('ZMQ_SOCKET', 'host')
@@ -80,11 +84,11 @@ def date_range(type_, **kwargs):
     """
     if type_ == 'present':
         min_bar = kwargs['bar_num']
-        start_time = dt.datetime.now() - dt.timedelta(minutes=min_bar)
-        end_time = dt.datetime.now() + dt.timedelta(minutes=10)
+        start_time = datetime.datetime.now() - datetime.timedelta(minutes=min_bar)
+        end_time = datetime.datetime.now() + datetime.timedelta(minutes=10)
     elif type_ == 'history':
         if kwargs.get('bar_num'):
-            t_delta = dt.timedelta(minutes=kwargs.get('bar_num'))
+            t_delta = datetime.timedelta(minutes=kwargs.get('bar_num'))
             start_time = parse(kwargs['start']) if kwargs.get('start') else parse(kwargs['end']) - t_delta
             end_time = parse(kwargs['end']) if kwargs.get('end') else parse(kwargs['start']) + t_delta
         elif kwargs.get('start', None) and kwargs.get('end', None):
@@ -98,8 +102,8 @@ def date_range(type_, **kwargs):
 
 def symbol(code_prefix, type_='futures', **kwargs):
     if type_ == 'futures':
-        m_code = MONTH_LETTER_MAPS[kwargs.get('month')] if kwargs.get('month') else MONTH_LETTER_MAPS[dt.datetime.now().month]
-        y_code = kwargs['year'][-1] if kwargs.get('year') else str(dt.datetime.now().year)[-1]
+        m_code = MONTH_LETTER_MAPS[kwargs.get('month')] if kwargs.get('month') else MONTH_LETTER_MAPS[datetime.datetime.now().month]
+        y_code = kwargs['year'][-1] if kwargs.get('year') else str(datetime.datetime.now().year)[-1]
         Symbol = code_prefix + m_code + y_code  # 根据当前时间生成品种代码
         A_logger.info(f'初始化symbol代码-{Symbol}')
         return Symbol
@@ -158,3 +162,86 @@ class Zbjs(ZB):
                     buysell[Timestamp(i[0])] = 1 if i[2] == '多' else -1
                     buysell[Timestamp(i[1])] = 2 if i[2] == '空' else -2
         return buysell
+
+
+class MongoDBData:
+    """ MongoDB 数据库的连接与数据查询处理类 """
+
+
+    def __init__(self, db=None, table=None):
+        self.db_name = db
+        self.table = table
+        # if not self._coll:
+        #     self._coll = self.get_coll()
+        self._coll = self.get_coll()
+
+    def get_coll(self):
+        client = pymongo.MongoClient('mongodb://192.168.2.226:27017')
+        self.db = client[self.db_name] if self.db_name else client['HKFuture']
+        coll = self.db[self.table] if self.table else self.db['future_1min']
+        return coll
+
+    def get_hsi(self, sd, ed, code='HSI'):
+        """
+        获取指定开始日期，结束日期，指定合约的恒指分钟数据
+        :param sd: 开始日期
+        :param ed: 结束日期
+        :param code: 合约代码
+        :return:
+        """
+        # hf = HKFuture()
+        # if not isinstance(sd, str):
+        #     sd = dtf(sd)
+        # if not isinstance(ed, str):
+        #     ed = dtf(ed)
+        # data = hf.get_bars(code, start=sd, end=ed)
+        # for t, _, o, h, l, c, v in data.values:
+        #     yield [t, o, h, l, c, v]
+
+        if isinstance(sd, str):
+            sd = datetime.datetime.strptime(sd,'%Y-%m-%d %H:%M:%S')
+        if isinstance(ed, str):
+            ed = datetime.datetime.strptime(ed,'%Y-%m-%d %H:%M:%S')
+        dates = set()
+        start_dates = [sd]
+        _month = sd.month
+        _year = sd.year
+        e_y = ed.year
+        e_m = ed.month
+        _while = 0
+        res = []
+        while _year < e_y or (_year == e_y and _month <= e_m):
+            _month = sd.month + _while
+            _year = sd.year + math.ceil(_month / 12) - 1
+            _month = _month % 12 if _month % 12 else 12
+            code = code[:3] + str(_year)[2:] + ('0' + str(_month) if _month < 10 else str(_month))
+            try:
+                _ed = self.db['future_contract_info'].find({'CODE': code})[0]['EXPIRY_DATE']
+            except:
+                return res
+            if _ed not in start_dates:
+                start_dates.append(_ed)
+            _while += 1
+            if sd >= _ed:
+                continue
+            _sd = start_dates[-2]
+
+            if _sd > ed:
+                return res
+            data = self._coll.find({'datetime': {'$gte': _sd, '$lt': _ed}, 'code': code},
+                                   projection=['datetime', 'open', 'high', 'low', 'close']).sort('datetime',1)  # 'HSI1808'
+
+            _frist = True
+            for i in data:
+                date = i['datetime']
+                if _frist:
+                    _frist = False
+                    exclude_time = str(date)[:10]
+                    dates.add(datetime.datetime.strptime(exclude_time + ' 09:14:00', '%Y-%m-%d %H:%M:%S'))
+                    dates.add(datetime.datetime.strptime(exclude_time + ' 12:59:00', '%Y-%m-%d %H:%M:%S'))
+                if date not in dates:
+                    dates.add(date)
+                    if date > ed:
+                        return res
+                    res.append([date, i['open'], i['high'], i['low'], i['close']])
+        return res

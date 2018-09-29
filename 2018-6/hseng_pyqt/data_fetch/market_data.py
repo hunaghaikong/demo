@@ -77,7 +77,7 @@ class OHLC(market_data_base):  # 主图表的OHLC数据类
     ticker_sig = QtCore.pyqtSignal(SPApiTicker)
     price_sig = QtCore.pyqtSignal(SPApiPrice)
 
-    def __init__(self, symbol, minbar=None, ktype='1T', db='futures_min'):
+    def __init__(self, symbol, minbar=None, ktype='1T', db='futures_min', dbtype='mysql'):
         market_data_base.__init__(self)
         self.__ktype = ktype
         self.symbol = symbol
@@ -89,6 +89,7 @@ class OHLC(market_data_base):  # 主图表的OHLC数据类
         self.extra_data = {}
         self.bar_size = 200
         self.db = db
+        self.dbtype = dbtype
         F_logger.info(f'D+初始化请求{self.symbol}数据')
 
     def __str__(self):
@@ -109,26 +110,39 @@ class OHLC(market_data_base):  # 主图表的OHLC数据类
     def __call__(self, daterange, limit_bar=True):
         start, end = daterange
         symbol = self.symbol[:3] if self.db != 'futures_min' else self.symbol
-        if bool(self._minbar) & limit_bar:
-            self._sql = f"select datetime, open, high, low, close from " \
-                        f"(select * from carry_investment.{self.db} " \
-                        f"where datetime<\"{end} \" and prodcode=\"{symbol}\" " \
-                        f"order by id desc limit 0,{self._minbar}) as fm order by fm.id asc"
-            F_logger.info(f'D+初始化{symbol}数据,请求结束时间：<{end}>前至{self._minbar}条1min bar')
+        if self.dbtype == 'mysql':
+            if bool(self._minbar) & limit_bar:
+                self._sql = f"select datetime, open, high, low, close from " \
+                            f"(select * from carry_investment.{self.db} " \
+                            f"where datetime<\"{end} \" and prodcode=\"{symbol}\" " \
+                            f"order by id desc limit 0,{self._minbar}) as fm order by fm.id asc"
+                F_logger.info(f'D+初始化{symbol}数据,请求结束时间：<{end}>前至{self._minbar}条1min bar')
+            else:
+                self._sql = f"select datetime, open, high, low, close from carry_investment.{self.db} \
+                                            where datetime>=\"{start}\" \
+                                            and datetime<\"{end} \"\
+                                            and prodcode=\"{symbol}\""
+                F_logger.info(f'D+初始化{symbol}数据,请求时间<{start}>-<{end}>')
+            try:
+                self._data = pd.read_sql(self._sql, self._conn, index_col='datetime')  # _data是一分钟的OHLC
+                self._conn.commit()
+                self.last_bar_timerange = [self.data.index.floor(self.__ktype)[-1],
+                                           self.data.index.ceil(self.__ktype).shift(int(self.__ktype[:-1]), self.__ktype[-1])[-1]]
+                F_logger.info(f'D+初始化{self.symbol}数据完成.{self.start}-->{self.end}')
+            except:
+                F_logger.error(f'D+初始化{self.symbol}数据失败.ERROR,')
         else:
-            self._sql = f"select datetime, open, high, low, close from carry_investment.{self.db} \
-                                        where datetime>=\"{start}\" \
-                                        and datetime<\"{end} \"\
-                                        and prodcode=\"{symbol}\""
-            F_logger.info(f'D+初始化{symbol}数据,请求时间<{start}>-<{end}>')
-        try:
-            self._data = pd.read_sql(self._sql, self._conn, index_col='datetime')  # _data是一分钟的OHLC
-            self._conn.commit()
-            self.last_bar_timerange = [self.data.index.floor(self.__ktype)[-1],
-                                       self.data.index.ceil(self.__ktype).shift(int(self.__ktype[:-1]), self.__ktype[-1])[-1]]
-            F_logger.info(f'D+初始化{self.symbol}数据完成.{self.start}-->{self.end}')
-        except:
-            F_logger.error(f'D+初始化{self.symbol}数据失败.ERROR,')
+            mongo = MongoDBData()
+            da = pd.DataFrame(mongo.get_hsi(start, end), columns=['datetime', 'open', 'high', 'low', 'close'])
+            da.index = da['datetime']
+            del da['datetime']
+            self._data = da
+            try:
+                self.last_bar_timerange = [self.data.index.floor(self.__ktype)[-1],
+                                           self.data.index.ceil(self.__ktype).shift(int(self.__ktype[:-1]), self.__ktype[-1])[-1]]
+                F_logger.info(f'D+初始化{self.symbol}数据完成.{self.start}-->{self.end}')
+            except:
+                F_logger.error(f'D+初始化{self.symbol}数据失败.ERROR,')
         return self
 
     def change_symbol(self, symbol, daterange=None, limit_bar=True):
