@@ -35,8 +35,8 @@ class ZB(object):
                "", "止损100个点。"],
         "14": ["收盘价大于60均线 与 dea大于0，则做多；收盘价小于60均线 与 dea小于0，则平仓。",
                "收盘价小于60均线 与 dea小于0，则做空；收盘价大于60均线 与 dea大于0，则平仓。", "止损100个点。"],
-        "15": ["出现三波上涨（以macd区间区分） 与 底背离，则做空；收盘价大于60均线 与 价差除以标准差>1.5，则平仓。",
-               "出现三波下跌（以macd区间区分） 与 顶背离，则做多；收盘价小于60均线 与 价差除以标准差<-1.5，则平仓。", "止损100个点。"],
+        "15": ["60均线下方出现三波下跌（以macd区间区分） 与 底背离，则做多；收盘价大于60均线 与 价差除以标准差>1.5，则平仓。",
+               "60均线上面出现三波上涨（以macd区间区分） 与 顶背离，则做空；收盘价小于60均线 与 价差除以标准差<-1.5，则平仓。", "止损100个点。"],
         "16": ["当前MACD区域收盘价大于上一波价格新高，则做多；在第二波绿区平仓。",
                "当前MACD区域收盘价小于上一波价格新低，则做空；在第二波红区平仓。", "止损100个点。"],
     }
@@ -1877,8 +1877,8 @@ class ZB(object):
             pctj_k = clo < mas and mul < -1.5
 
             if sb != reg:
-                tj_d += 1 if macd < 0 and last_clo and clo < last_clo else 0
-                tj_k += 1 if macd > 0 and last_clo and clo > last_clo else 0
+                tj_d += 1 if macd < 0 and last_clo and clo < last_clo and clo < mas  else 0
+                tj_k += 1 if macd > 0 and last_clo and clo > last_clo and clo > mas  else 0
                 sb = reg
                 last_clo = clo
 
