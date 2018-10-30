@@ -28,7 +28,7 @@ if __name__ == '__main__':
     t = time.localtime().tm_hour
     while 1:
         t2 = time.localtime().tm_hour
-        if 8 > t or t > 18:
+        if 8 > t or t > 17:
             u32.close_screen()
             time.sleep(60 * 60)
             continue
