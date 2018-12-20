@@ -151,7 +151,7 @@ def DrawDF(df1, filename, b_index, s_index, title):
 #     plt.close()
 
 if __name__ == '__main__':
-    data = sql_data(st='2018-11-08 09:00:00', ed='2018-11-08 16:00:00')
+    data = sql_data(st='2018-11-08 09:00:00', ed='2018-11-08 23:59:00')
     data = [i for i in data]
     # data: [(datetime.datetime(2018, 11, 8, 9, 15), 26614.0, 26614.0, 26498.0, 26499.0, 2447.0), (datetime.datetime(2018, 11, 8, 9, 16), 26496.0, 26518.0, 26477.0, 26499.0, 1325.0)...]
     d = get_macd(data)
