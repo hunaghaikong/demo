@@ -289,13 +289,32 @@ class WHCJ:
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
         win32gui.CloseWindow(win)  # 最小化
         start_time = 0
+
+        # 打开代码为name的产品
+        def start_name(name):
+	        for i in range(len(name)):
+	            win32.user32.SendMessageW(hEdit, WM_CHAR, ord(name[i]), None)
+	            time.sleep(0.05)
+	            if i == len(name) - 1:
+	                time.sleep(0.1)
+	                try:
+	                    # 进行回车确认
+	                    # win32gui.SetForegroundWindow(hEdit)
+	                    # win32api.keybd_event(13, 0, 0, 0)
+	                    # win32api.keybd_event(13, 0, win32con.KEYEVENTF_KEYUP, 0)
+	                    win32gui.PostMessage(hEdit, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+	                    win32gui.PostMessage(hEdit, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+	                except:
+	                    self.runs()
+        start_name('7214')
+        time.sleep(2)
         while 1:
             t2 = time.time()
             t = time.localtime(t2)
             t_min = t.tm_hour*60+t.tm_min
             if t.tm_hour == 12 or (16*60+30<t_min<17*60+15) or (0<t_min<9*60+15):
                 continue
-            names = {'7211':'HSIX8', '7121':'HSI', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
+            names = {'7212':'HSIZ8', '7121':'HSI', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
             for name in names:
                 if name != '7214':
                     if t2-start_time < 600:
@@ -304,20 +323,7 @@ class WHCJ:
                         start_time = 1
 
                 print('更新产品：', names[name], '...')
-                for i in range(len(name)):
-                    win32.user32.SendMessageW(hEdit, WM_CHAR, ord(name[i]), None)
-                    time.sleep(0.1)
-                    if i == len(name) - 1:
-                        time.sleep(0.2)
-                        try:
-                            # 进行回车确认
-                            # win32gui.SetForegroundWindow(hEdit)
-                            # win32api.keybd_event(13, 0, 0, 0)
-                            # win32api.keybd_event(13, 0, win32con.KEYEVENTF_KEYUP, 0)
-                            win32gui.PostMessage(hEdit, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-                            win32gui.PostMessage(hEdit, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-                        except:
-                            self.runs()
+                start_name(name)
                 time.sleep(5)
             #win32gui.SetForegroundWindow(win) # 指定句柄设置为前台，也就是激活
             #win32gui.SetBkMode(win, win32con.TRANSPARENT) # 设置为后台
