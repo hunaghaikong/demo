@@ -36,6 +36,10 @@ if __name__ == '__main__':
             time.sleep(60 * 5)
             continue
         t = t2
+        if t2>=17:
+        	for i in range(30):
+        		u32.close_screen()
+        		time.sleep(2)
         for i in range(90):
             u32.close_screen()
             time.sleep(2)
