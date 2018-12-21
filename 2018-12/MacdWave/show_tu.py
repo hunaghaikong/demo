@@ -83,8 +83,11 @@ def DrawDF(df1, filename, b_index, s_index, title):
     ax.set_xticklabels([])
     # print(xx)
     # ax1.set_xticklabels(xx[:10])
-    # ind = np.arange(len(xx))
-    ax1.set_xticklabels(xx)
+    ind = np.arange(len(xx))
+    ax1.xaxis_date()
+    xx_separated = [xx[i] for i in range(0,len(xx),int(len(xx)/8))]
+    ax1.set_xticklabels(xx_separated)
+    # ax1.plot(xx, ind)
 
     ax1.set_ylim(-200, 200)
 
