@@ -1,4 +1,3 @@
-
 import os
 import sys
 import time
@@ -11,7 +10,7 @@ from datetime import datetime
 import pyautogui as pag
 from struct import unpack
 from collections import namedtuple, deque, OrderedDict
-from win32gui import IsWindow,IsWindowEnabled,IsWindowVisible,GetWindowText,EnumWindows
+from win32gui import IsWindow, IsWindowEnabled, IsWindowVisible, GetWindowText, EnumWindows
 from pymouse import PyMouse
 from pykeyboard import PyKeyboard
 from ctypes import windll as win32
@@ -27,24 +26,26 @@ except:
 """
 读取文华财经dat数据，并存储到数据库
 """
+
+
 class WHCJ:
     def __init__(self):
         self.conn = get_conn('carry_investment')
         N = namedtuple('N', ['month', 'code'])
         # 代码所对应的合约
         self.hsi = OrderedDict({
-            '00034150.dat': N(1, 'HSIF8'),
-            '00034151.dat': N(2, 'HSIG8'),
-            '00034152.dat': N(3, 'HSIH8'),
-            '00034154.dat': N(4, 'HSIJ8'),
-            '00034155.dat': N(5, 'HSIK8'),
-            '00034157.dat': N(6, 'HSIM8'),
-            '00034158.dat': N(7, 'HSIN8'),
-            '00034161.dat': N(8, 'HSIQ8'),
-            '00034165.dat': N(9, 'HSIU8'),
-            '00034166.dat': N(10, 'HSIV8'),
-            '00034168.dat': N(11, 'HSIX8'),
-            '00034170.dat': N(12, 'HSIZ8'),
+            '00034150.dat': N(1, 'HSIF9'),
+            '00034151.dat': N(2, 'HSIG9'),
+            '00034152.dat': N(3, 'HSIH9'),
+            '00034154.dat': N(4, 'HSIJ9'),
+            '00034155.dat': N(5, 'HSIK9'),
+            '00034157.dat': N(6, 'HSIM9'),
+            '00034158.dat': N(7, 'HSIN9'),
+            '00034161.dat': N(8, 'HSIQ9'),
+            '00034165.dat': N(9, 'HSIU9'),
+            '00034166.dat': N(10, 'HSIV9'),
+            '00034168.dat': N(11, 'HSIX9'),
+            '00034170.dat': N(12, 'HSIZ9'),
         })
         # 7214 # HSI 00034182.dat
         # 7253 # MHI 00034233.dat
@@ -52,9 +53,9 @@ class WHCJ:
         # 恒生期货当月
         self.same_month = {'00034182.dat': 'HSI', '00034233.dat': 'MHI', '00034214.dat': 'HHI'}
         # 恒生指数
-        self.index = {'00033906.dat':'HSI'}
+        self.index = {'00033906.dat': 'HSI'}
 
-    def transfer_min1(self,files):
+    def transfer_min1(self, files):
         ''' 解析一分钟、五分钟数据 '''
         contrast = None
         with open(files, 'rb') as f:
@@ -88,13 +89,13 @@ class WHCJ:
                 contrast = dd
                 yield [dd, openPrice, high, low, close, vol, amount, a[7], a[8]]
 
-    def transfer_day(self,files):
+    def transfer_day(self, files):
         ''' 解析日线数据 '''
         contrast = None
         with open(files, 'rb') as f:
             buf = f.read()
         num = len(buf)
-        no = num / 37 
+        no = num / 37
         b = 0
         e = 37
 
@@ -122,8 +123,7 @@ class WHCJ:
                 contrast = dd
                 yield [dd, openPrice, high, low, close, vol, amount, a[7], a[8]]
 
-
-    def to_sql(self,conn, data):
+    def to_sql(self, conn, data):
         cur = conn.cursor()
         sql = "INSERT INTO wh_min(prodcode,datetime,open,high,low,close,vol) VALUES(%s,%s,%s,%s,%s,%s,%s)"
         count = 0
@@ -140,7 +140,7 @@ class WHCJ:
         else:
             conn.commit()
 
-    def file_to_sql(self,file_path,dat,code_time):
+    def file_to_sql(self, file_path, dat, code_time):
         """ 获得文件数据，插入数据库 """
         cur = self.conn.cursor()
         count = 0
@@ -183,7 +183,7 @@ class WHCJ:
                 self.conn.commit()
         return insert_size
 
-    def main(self,to_file=None):
+    def main(self, to_file=None):
         """ to_file: 如果有传入to_file，则只使用to_file这个文件更新数据库，否则检查所有指定文件并更新到数据库"""
         dirs = r'C:\wh6模拟版\Data\恒生期指\min1'
 
@@ -195,7 +195,8 @@ class WHCJ:
 
         cur = self.conn.cursor()
         if to_file.split('\\')[-2] == 'min1' and dat in same_month:
-            code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min WHERE prodcode='%s' ORDER BY datetime DESC LIMIT 1"%same_month[dat]
+            code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min WHERE prodcode='%s' ORDER BY datetime DESC LIMIT 1" % \
+                            same_month[dat]
         elif to_file.split('\\')[-2] == 'min1' and dat in hsi:
             code_time_sql = "SELECT prodcode,datetime FROM wh_min ORDER BY datetime DESC LIMIT 1"
         elif to_file.split('\\')[-2] == 'min1' and dat in index:
@@ -212,39 +213,40 @@ class WHCJ:
 
         numbers = [nu for nu in os.listdir(dirs) if (nu in hsi and hsi[nu].month <= t.month) or nu in same_month]
 
-
         if to_file:
-            insert_size = self.file_to_sql(to_file,dat,code_time)
+            insert_size = self.file_to_sql(to_file, dat, code_time)
             self.conn.commit()
             return insert_size
 
         for number in numbers:
             file_path = dirs + os.sep + number
-            insert_size = self.file_to_sql(file_path,dat,code_time)
+            insert_size = self.file_to_sql(file_path, dat, code_time)
 
         self.conn.commit()
 
         return insert_size
 
-    def sbdj(self,x,y,enter=None):
+    def sbdj(self, x, y, enter=None):
         """ 鼠标左击 与 按回车键 """
-        win32api.SetCursorPos([x,y])    #为鼠标焦点设定一个位置
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0,0,0)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0,0,0)
-        #win32api.keybd_event(0,0,win32con.KEYEVENTF_KEYUP,0)
+        win32api.SetCursorPos([x, y])  # 为鼠标焦点设定一个位置
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        # win32api.keybd_event(0,0,win32con.KEYEVENTF_KEYUP,0)
         if enter is not None:
             # 按下回车键
             time.sleep(0.1)
-            win32api.keybd_event(13,0,0,0)
-            win32api.keybd_event(13,0,win32con.KEYEVENTF_KEYUP,0)
+            win32api.keybd_event(13, 0, 0, 0)
+            win32api.keybd_event(13, 0, win32con.KEYEVENTF_KEYUP, 0)
 
     def get_ct(self):
         """ 获取所有Windows打开的窗体 """
         titles = set()
+
         def foo(hwnd, mouse):
             # 去掉下面这句就能获取所有，但是我不需要那么多
             if IsWindow(hwnd) and IsWindowEnabled(hwnd) and IsWindowVisible(hwnd):
                 titles.add(GetWindowText(hwnd))
+
         EnumWindows(foo, 0)
         return titles
 
@@ -258,11 +260,11 @@ class WHCJ:
             time.sleep(1)
             count += 1
             cts = self.get_ct()
-            if not count%30:
+            if not count % 30:
                 os.system('taskkill /F /IM mytrader_wh.exe')
                 os.system('start C:\wh6模拟版\mytrader_wh.exe')
         d2 = [i for i in cts if '赢顺云交易' in i][0]
-        win = win32gui.FindWindow(None,d2)
+        win = win32gui.FindWindow(None, d2)
         return win
 
     def runs(self):
@@ -277,10 +279,10 @@ class WHCJ:
                 break
         hEdit = win32.user32.FindWindowExW(ct[-1], None, 'Edit', None)
         WM_CHAR = 0x0102
-        min1_zb = (258,32)
+        min1_zb = (258, 32)
         # aj=OrderedDict({'wp':(16,330), 'wpzlhy':(906,999), 'hz=':(131,94), 'min1':(260,35), 'back_off':(19,31)})
         x, y = pag.position()  # 原来鼠标坐标
-        #win32gui.ShowWindow(win, win32con.SW_MAXIMIZE)  # 全屏
+        # win32gui.ShowWindow(win, win32con.SW_MAXIMIZE)  # 全屏
         time.sleep(0.1)
         self.sbdj(*min1_zb)
         time.sleep(0.5)
@@ -292,32 +294,33 @@ class WHCJ:
 
         # 打开代码为name的产品
         def start_name(name):
-	        for i in range(len(name)):
-	            win32.user32.SendMessageW(hEdit, WM_CHAR, ord(name[i]), None)
-	            time.sleep(0.05)
-	            if i == len(name) - 1:
-	                time.sleep(0.1)
-	                try:
-	                    # 进行回车确认
-	                    # win32gui.SetForegroundWindow(hEdit)
-	                    # win32api.keybd_event(13, 0, 0, 0)
-	                    # win32api.keybd_event(13, 0, win32con.KEYEVENTF_KEYUP, 0)
-	                    win32gui.PostMessage(hEdit, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-	                    win32gui.PostMessage(hEdit, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-	                except:
-	                    self.runs()
+            for i in range(len(name)):
+                win32.user32.SendMessageW(hEdit, WM_CHAR, ord(name[i]), None)
+                time.sleep(0.05)
+                if i == len(name) - 1:
+                    time.sleep(0.1)
+                    try:
+                        # 进行回车确认
+                        # win32gui.SetForegroundWindow(hEdit)
+                        # win32api.keybd_event(13, 0, 0, 0)
+                        # win32api.keybd_event(13, 0, win32con.KEYEVENTF_KEYUP, 0)
+                        win32gui.PostMessage(hEdit, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+                        win32gui.PostMessage(hEdit, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+                    except:
+                        self.runs()
+
         start_name('7214')
         time.sleep(2)
         while 1:
             t2 = time.time()
             t = time.localtime(t2)
-            t_min = t.tm_hour*60+t.tm_min
-            if t.tm_hour == 12 or (16*60+30<t_min<17*60+15) or (0<t_min<9*60+15):
+            t_min = t.tm_hour * 60 + t.tm_min
+            if t.tm_hour == 12 or (16 * 60 + 30 < t_min < 17 * 60 + 15) or (0 < t_min < 9 * 60 + 15):
                 continue
-            names = {'7212':'HSIZ8', '7121':'HSI', '7253':'MHI', '7234':'HHI','7214':'HSI'}  # 要更新的产品代码
+            names = {'7201': 'HSIF9', '7121': 'HSI', '7253': 'MHI', '7234': 'HHI', '7214': 'HSI'}  # 要更新的产品代码
             for name in names:
                 if name != '7214':
-                    if t2-start_time < 600:
+                    if t2 - start_time < 600:
                         continue
                     else:
                         start_time = 1
@@ -325,8 +328,8 @@ class WHCJ:
                 print('更新产品：', names[name], '...')
                 start_name(name)
                 time.sleep(5)
-            #win32gui.SetForegroundWindow(win) # 指定句柄设置为前台，也就是激活
-            #win32gui.SetBkMode(win, win32con.TRANSPARENT) # 设置为后台
+            # win32gui.SetForegroundWindow(win) # 指定句柄设置为前台，也就是激活
+            # win32gui.SetBkMode(win, win32con.TRANSPARENT) # 设置为后台
             start_time = t2 if start_time == 1 else start_time
             time.sleep(120)
 

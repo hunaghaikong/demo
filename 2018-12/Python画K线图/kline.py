@@ -131,6 +131,7 @@ def DrawDF(df1, filename, b_index, s_index, title):
     # xx1=list(df1.datetime)
     ax.set_xticklabels([])
     xx_separated = [xx[i] for i in range(0, len(xx), int(len(xx) / 8))]
+    xx_separated.insert(0,xx_separated[0])
     ax1.set_xticklabels(xx_separated)
     # ax1.set_xticklabels(xx)
 
@@ -140,7 +141,7 @@ def DrawDF(df1, filename, b_index, s_index, title):
     # 均线，MACD黄白线
     ax.plot(df1.index * kline + k_width / 2, df1.ma60, color='r', alpha=1)
     ax.plot(df1.index * kline + k_width / 2, df1.ma30, color='g', alpha=1)
-    ax1.plot(df1.index * kline + k_width / 2, df1['diff'], color='w', alpha=1)
+    ax1.plot(df1.index * kline + k_width / 2, df1['diff'], color='c', alpha=1)
     ax1.plot(df1.index * kline + k_width / 2, df1['dea'], color='y', alpha=1)
     # ax1.set_xticklabels([])
     ax.autoscale_view()
@@ -184,6 +185,7 @@ if __name__ == '__main__':
         st = d[d.datetime == i[0]].index[0]
         et = d[d.datetime == i[1]].index[0]
         plt = DrawDF(d, f'images\\yl{jss}.jpg', st, et, i[3])
+        d.to_pickle(r'D:\tools\Tools\December_2018\2018-12-29\a.pkl')
         jss += 1
 
     # data = sql_data(st='2018-11-08 09:00:00', ed='2018-11-08 16:00:00')
