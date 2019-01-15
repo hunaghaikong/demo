@@ -294,10 +294,11 @@ class WHCJ:
 
         # 打开代码为name的产品
         def start_name(name):
-            for i in range(len(name)):
+            len_name = len(name)
+            for i in range(len_name):
                 win32.user32.SendMessageW(hEdit, WM_CHAR, ord(name[i]), None)
                 time.sleep(0.05)
-                if i == len(name) - 1:
+                if i == len_name - 1:
                     time.sleep(0.1)
                     try:
                         # 进行回车确认
@@ -309,8 +310,6 @@ class WHCJ:
                     except:
                         self.runs()
 
-        start_name('7214')
-        time.sleep(2)
         while 1:
             t2 = time.time()
             t = time.localtime(t2)
@@ -319,13 +318,13 @@ class WHCJ:
                 continue
             names = {'7201': 'HSIF9', '7121': 'HSI', '7253': 'MHI', '7234': 'HHI', '7214': 'HSI'}  # 要更新的产品代码
             for name in names:
-                if name != '7214':
+                if name not in {'7253', '7214'}:
                     if t2 - start_time < 600:
                         continue
                     else:
                         start_time = 1
 
-                print('更新产品：', names[name], '...')
+                print('更新产品：', name, names[name], '...')
                 start_name(name)
                 time.sleep(5)
             # win32gui.SetForegroundWindow(win) # 指定句柄设置为前台，也就是激活
