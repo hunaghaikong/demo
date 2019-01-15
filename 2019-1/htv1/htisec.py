@@ -29,6 +29,9 @@ class Hsi(object):
         #默认止损的点数 
         self.stop_point=50
 
+        # 是否去除不对应不全的交易记录
+        self.is_clear = False
+
     def verify_error(self,html):
         '''检验是否有错误提示 '''
         reg=re.search(self.reg['error'] ,html.encode('utf-8'))
@@ -122,22 +125,23 @@ class Hsi(object):
         df = pd.DataFrame(df, columns=['bs', 'price', 'time', 'code', 'sxf', 'hy', 'operationPeople'])
 
         # 去除信息不全的单
-        # ccs = [[i.contract.localSymbol, i.position] for i in self.ib.portfolio()]
-        # codes = defaultdict(int)
-        # for i in ccs:
-        #     codes[i[0]] += i[1]
-        # _s = []
-        # for code in set(df.code):
-        #     k = df[df.code == code]
-        #     ints = int(k.bs.sum() - codes[code])
-        #     for ind in k.index:
-        #         ind_bs = k.iloc[ind]['bs']
-        #         if (ints < 0 and ind_bs < 0 and ind_bs >= ints) or (ints > 0 and ind_bs > 0 and ind_bs <= ints):
-        #             ints -= ind_bs
-        #             _s.append(ind)
-        #             if ints == 0:
-        #                 break
-        # df = df.drop(_s)
+        if self.is_clear:
+            ccs = [[i.contract.localSymbol, i.position] for i in self.ib.portfolio()]
+            codes = defaultdict(int)
+            for i in ccs:
+                codes[i[0]] += i[1]
+            _s = []
+            for code in set(df.code):
+                k = df[df.code == code]
+                ints = int(k.bs.sum() - codes[code])
+                for ind in k.index:
+                    ind_bs = k.iloc[ind]['bs']
+                    if (ints < 0 and ind_bs < 0 and ind_bs >= ints) or (ints > 0 and ind_bs > 0 and ind_bs <= ints):
+                        ints -= ind_bs
+                        _s.append(ind)
+                        if ints == 0:
+                            break
+            df = df.drop(_s)
 
         return df
 

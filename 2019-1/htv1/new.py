@@ -219,7 +219,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     #test1 button
     def c_test1(self):
         if self.check_login(): return
-
+        if web_trade.is_clear == False:
+            web_trade.is_clear = True
+            self.b_test1.setText('不去除')
+        else:
+            web_trade.is_clear = False
+            self.b_test1.setText('去除')
         # get orderlist
         # hh = web_trade.get_orderlist()
         # if web_trade.status == 999:

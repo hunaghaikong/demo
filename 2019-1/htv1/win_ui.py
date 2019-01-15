@@ -649,6 +649,6 @@ class Ui_MainWindow(object):
         self.b_delStopS.setText(_translate("MainWindow", "删除空单的止损(多)"))
         self.b_delStop.setText(_translate("MainWindow", "删除多余的止损单"))
         self.b_test.setText(_translate("MainWindow", "Test"))
-        self.b_test1.setText(_translate("MainWindow", "Test1"))
+        self.b_test1.setText(_translate("MainWindow", "不去除"))  # Test1
 
 
