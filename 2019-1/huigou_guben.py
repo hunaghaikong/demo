@@ -4,6 +4,8 @@ import random
 import datetime
 import pickle
 import re
+import os
+import pandas as pd
 
 from bs4 import BeautifulSoup
 from gevent import spawn, joinall, monkey
@@ -60,7 +62,7 @@ def get_data():
             url1 = f'http://hk.eastmoney.com/buyback_{i}.html?code=&sdate=&edate='
             url2 = f'http://hk.eastmoney.com/buyback_{i+1}.html?code=&sdate=&edate='
             if i == 843:
-                joinall([spawn(cl_data, url), spawn(cl_data, ur2)])
+                joinall([spawn(cl_data, url1), spawn(cl_data, url2)])
                 break
             else:
                 url3 = f'http://hk.eastmoney.com/buyback_{i+2}.html?code=&sdate=&edate='
