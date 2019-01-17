@@ -29,10 +29,10 @@ def tjs(data):
         if _day not in days:
             days.add(_day)
             if dayd:
-                # ['当前合约', '次月合约', '日期', '平均值', '标准差', '总数', '10分位', '25分位', '50分位', '75分位', '90分位', '统计条数']
-                yield [*last_hy, last_day, np.average(dayd), np.std(dayd), sum(dayd), np.percentile(dayd, 10),
-                       np.percentile(dayd, 25), np.percentile(dayd, 50), np.percentile(dayd, 75),
-                       np.percentile(dayd, 90), len(dayd)]
+                # ['当前合约', '次月合约', '日期', '平均值', '标准差', '总数', '5分位', '10分位', '25分位', '50分位', '75分位', '90分位', '95分位', '统计条数']
+                yield [*last_hy, last_day, np.average(dayd), np.std(dayd), sum(dayd), np.percentile(dayd, 5),
+                       np.percentile(dayd, 10), np.percentile(dayd, 25), np.percentile(dayd, 50), 
+                       np.percentile(dayd, 75),np.percentile(dayd, 90), np.percentile(dayd, 95), len(dayd)]
                 dayd = []
         dayd.append(i[3])
         last_day = _day
@@ -41,7 +41,7 @@ def tjs(data):
 
 def main():
     codes = ['HSI', 'MHI', 'HHI']
-    columns = ['当前合约', '次月合约', '日期', '平均值', '标准差', '总数', '10分位', '25分位', '50分位', '75分位', '90分位', '统计条数']
+    columns = ['当前合约', '次月合约', '日期', '平均值', '标准差', '总数', '5分位', '10分位', '25分位', '50分位', '75分位', '90分位', '95分位', '统计条数']
     for code in codes:
         path = r"D:\tools\Tools\January_2019\2019-01-02\data\%s.pkl" % code
         data = get_data(path)
