@@ -134,13 +134,16 @@ class Hsi(object):
             for code in set(df.code):
                 k = df[df.code == code]
                 ints = int(k.bs.sum() - codes[code])
-                for ind in k.index:
-                    ind_bs = k.iloc[ind]['bs']
-                    if (ints < 0 and ind_bs < 0 and ind_bs >= ints) or (ints > 0 and ind_bs > 0 and ind_bs <= ints):
-                        ints -= ind_bs
-                        _s.append(ind)
-                        if ints == 0:
-                            break
+                try:
+                    for ind in k.index:
+                        ind_bs = k.iloc[ind]['bs']
+                        if (ints < 0 and ind_bs < 0 and ind_bs >= ints) or (ints > 0 and ind_bs > 0 and ind_bs <= ints):
+                            ints -= ind_bs
+                            _s.append(ind)
+                            if ints == 0:
+                                break
+                except:
+                    pass
             df = df.drop(_s)
 
         return df

@@ -225,6 +225,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             web_trade.is_clear = False
             self.b_test1.setText('去除')
+
         # get orderlist
         # hh = web_trade.get_orderlist()
         # if web_trade.status == 999:
