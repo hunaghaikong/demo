@@ -14,7 +14,7 @@ std = grouped.std()
 """
 
 
-def get_data(path=r"D:\tools\Tools\January_2019\2019-01-02\data\HSI.pkl"):
+def get_data(path):
     """ 获取DataFrame数据 """
     data = pd.read_pickle(path)
     return data
@@ -43,7 +43,7 @@ def main():
     codes = ['HSI', 'MHI', 'HHI']
     columns = ['当前合约', '次月合约', '日期', '平均值', '标准差', '总数', '5分位', '10分位', '25分位', '50分位', '75分位', '90分位', '95分位', '统计条数']
     for code in codes:
-        path = r"D:\tools\Tools\January_2019\2019-01-02\data\%s.pkl" % code
+        path = r"D:\tools\Tools\January_2019\2019-1-18\data\%s.pkl" % code
         data = get_data(path)
         hsi = [i for i in tjs(data)]
         hsi = pd.DataFrame(hsi, columns=columns)

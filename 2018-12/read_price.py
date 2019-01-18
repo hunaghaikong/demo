@@ -41,7 +41,7 @@ def read_jc(path='HKDATA',hdf_path='data.hdf5'):
             # 把文件转换为二维列表
             data = [i.split(',') for i in data.decode().split('\r\n')][:-1]
             data = [(i[0] + i[2], i[5] + i[6], float(i[7]), int(i[8])) for i in data if
-                    i[1] == 'F' and (_name in i[2] or _name2 in i[2]) and '20' not in i[9]]
+                    i[1] == 'F' and (_name in i[2] or _name2 in i[2]) and '1' in i[9]]
 
             # 定义两个字典，用来存放当月与次月合约的数据
             code1 = {}
@@ -91,8 +91,9 @@ def read_jc(path='HKDATA',hdf_path='data.hdf5'):
     h5.close()
 
 
-def get_hdf():
-    """ 获取hdf5的数据 """
+def get_hdf(name='HSI'):
+    """ 获取hdf5的数据
+        name: HSI, HHI, MHI """
     # 读取hdf5文件
     data = h5py.File('data.hdf5','r')
     # 获取所有的键
@@ -101,7 +102,7 @@ def get_hdf():
     # 迭代获取所有的值
     for i in k:
         d = data[f'TR/{i}']
-        d = [[i[0].decode(),i[1].decode(),i[2].decode(),float(i[3]),float(i[4]),float(i[5])] for i in d]
+        d = [[i[0].decode(),i[1].decode(),i[2].decode(),float(i[3]),float(i[4]),float(i[5])] for i in d if i[0].decode()[:3] == name]
         res += d
     return res
 

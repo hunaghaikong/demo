@@ -53,11 +53,11 @@ def plan1(hsi, hsi_dict):
     res = []  # 买卖记录集
 
     for j, i in enumerate(hsi_values):
-        dt = str(i[3])[:8]
-        ls_dt = last_dt(dt)
+        dt = str(i[3])
+        ls_dt = last_dt(dt[:8])
         if ls_dt in hsi_dict and j < len_hsi_values - 1:
             f5, f10, f50, f90, f95 = hsi_dict[ls_dt]
-            if str(i[3])[:8] not in zuihou:
+            if dt[:8] not in zuihou and dt[8:12] != '0915':
                 # ['当月合约', '次月合约', '时间', '价差', '上日10分位', '上日50分位', '上日90分位', '操作']
                 # B：买，S：卖，Sc：平买，Bc：平卖，Sl、Bl：平本合约尾单买、卖
                 if res:
@@ -100,11 +100,11 @@ def plan2(hsi, hsi_dict):
     res = []  # 买卖记录集
 
     for j, i in enumerate(hsi_values):
-        dt = str(i[3])[:8]
-        ls_dt = last_dt(dt)
+        dt = str(i[3])
+        ls_dt = last_dt(dt[:8])
         if ls_dt in hsi_dict and j < len_hsi_values - 1:
             f5, f10, f50, f90, f95 = hsi_dict[ls_dt]
-            if str(i[3])[:8] not in zuihou:
+            if dt[:8] not in zuihou and dt[8:12] != '0915':
                 # ['当月合约', '次月合约', '时间', '价差', '上日10分位', '上日50分位', '上日90分位', '操作']
                 # B：买，S：卖，Sc：平买，Bc：平卖，Sl、Bl：平本合约尾单买、卖
                 if i[3]//1000000 != hsi_values[j+1][3]//1000000:
@@ -152,11 +152,11 @@ def plan3(hsi, hsi_dict):
     res = []  # 买卖记录集
 
     for j, i in enumerate(hsi_values):
-        dt = str(i[3])[:8]
-        ls_dt = last_dt(dt)
+        dt = str(i[3])
+        ls_dt = last_dt(dt[:8])
         if ls_dt in hsi_dict and j < len_hsi_values - 1:
             f5, f10, f50, f90, f95 = hsi_dict[ls_dt]
-            if str(i[3])[:8] not in zuihou:
+            if dt[:8] not in zuihou and dt[8:12] != '0915':
                 # ['当月合约', '次月合约', '时间', '价差', '上日10分位', '上日50分位', '上日90分位', '操作']
                 # B：买，S：卖，Sc：平买，Bc：平卖，Sl、Bl：平本合约尾单买、卖
                 if res:
@@ -199,11 +199,11 @@ def plan4(hsi, hsi_dict):
     res = []  # 买卖记录集
 
     for j, i in enumerate(hsi_values):
-        dt = str(i[3])[:8]
-        ls_dt = last_dt(dt)
+        dt = str(i[3])
+        ls_dt = last_dt(dt[:8])
         if ls_dt in hsi_dict and j < len_hsi_values - 1:
             f5, f10, f50, f90, f95 = hsi_dict[ls_dt]
-            if str(i[3])[:8] not in zuihou:
+            if dt[:8] not in zuihou and dt[8:12] != '0915':
                 # ['当月合约', '次月合约', '时间', '价差', '上日10分位', '上日50分位', '上日90分位', '操作']
                 # B：买，S：卖，Sc：平买，Bc：平卖，Sl、Bl：平本合约尾单买、卖
                 if i[3]//1000000 != hsi_values[j+1][3]//1000000:
@@ -315,7 +315,7 @@ def main():
     #     res2.append(res[i][3] - res[i + 1][3] if res[i][-1] == 'S' else res[i + 1][3] - res[i][3])
 
 
-def tests():
+def tests(res):
     tj = {
         'b_vol': 0,  # 多单数量
         's_vol': 0,  # 空单数量
@@ -372,12 +372,12 @@ def tests():
         总共做单（买入卖出算一单）：{vols}
         盈利单数：{tj['yl_vol']}
 
-        最大盈利：{round(tj['max_yl'],2)}
-        最大亏损：{round(tj['max_ks'],2)}
+        最大盈利（点）：{round(tj['max_yl'],2)}
+        最大亏损（点）：{round(tj['max_ks'],2)}
 
-        盈利的/平均每单盈利： {round(tj['yl_total'],2)}/{round(tj['yl_total']/tj['yl_vol'],2)}
-        亏损的/平均每单亏损： {round(tj['ks_total'],2)}/{round(tj['ks_total']/(vols-tj['yl_vol']),2)}
+        盈利的/平均每单盈利（点）： {round(tj['yl_total'],2)}/{round(tj['yl_total']/tj['yl_vol'],2)}
+        亏损的/平均每单亏损（点）： {round(tj['ks_total'],2)}/{round(tj['ks_total']/(vols-tj['yl_vol']),2)}
 
-        总盈亏： {round(tj['yl_all'],2)} 点
+        总盈亏（点）： {round(tj['yl_all'],2)}
         总胜率： {round(tj['yl_vol']/vols*100,2)} %
         """)
