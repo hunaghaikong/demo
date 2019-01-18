@@ -4,6 +4,11 @@ import pandas as pd
 import re
 import time
 import datetime
+import pymongo as pm
+import numpy as np
+import configparser
+
+from dateutil import parser
 from pyquery import PyQuery as pq
 from collections import defaultdict
 from ib_insync import IB
@@ -123,6 +128,7 @@ class Hsi(object):
                i.execution.orderRef] for i in data]
 
         df = pd.DataFrame(df, columns=['bs', 'price', 'time', 'code', 'sxf', 'hy', 'operationPeople'])
+        df = df.sort_values('time')
 
         # 去除信息不全的单
         if self.is_clear:
@@ -501,5 +507,79 @@ class Hsi(object):
         # for index, rows in delpd.iterrows():
         #     print("del order refno:", rows.refno, rows.bqty)
         #     self.order_del(rows.refno)
+
+
+def save_ib_trade(file, dbhost=None, dbport=None, dbuser=None, dbpwd=None):
+    """ 读取IB导出的TXT文件并保存到数据库"""
+    if not (dbhost and dbport and dbuser and dbpwd):
+        conf = configparser.ConfigParser()
+        conf.read('util.log')
+        dbhost = conf['MongoDB']['host']
+        dbport = int(conf['MongoDB']['port'])
+        dbuser = conf['MongoDB']['user']
+        dbpwd = conf['MongoDB']['pswd']
+    client = pm.MongoClient(dbhost, dbport)
+    client.admin.authenticate(dbuser, dbpwd)
+    db = client.IB
+    col = db.get_collection('Trade')
+    trade_data = pd.read_csv(file)
+    is_for = False
+    for _, v in trade_data.iterrows():
+        is_for = True
+        t = parser.parse(f"{v['Date']} {v['Time']}")
+        _v = { 'time': t,
+                 'contract': {'secType': v['Security Type'],
+                  'conId': None,
+                  'symbol': v['Underlying'],
+                  'lastTradeDateOrContractMonth': v['Last Trading Day'],
+                  'strike': v['Strike'] if not np.isnan(v['Strike'] ) else 0.0,
+                  'right': '',
+                  'multiplier': '50',
+                  'exchange': v['Exch.'],
+                  'primaryExchange': '',
+                  'currency': 'HKD',
+                  'localSymbol': v['Symbol'],
+                  'tradingClass': v['Trading Class'],
+                  'includeExpired': False,
+                  'secIdType': '',
+                  'secId': '',
+                  'comboLegsDescrip': '',
+                  'comboLegs': None,
+                  'deltaNeutralContract': None},
+                 'execution': {'execId': v['ID'],
+                  'time': t,
+                  'acctNumber': v['Account'],
+                  'exchange': v['Exch.'],
+                  'side': v['Action'],
+                  'shares': v['Quantity'],
+                  'price': v['Price'],
+                  'permId': "",
+                  'clientId': 0,
+                  'orderId': 0,
+                  'liquidation': 0,
+                  'cumQty': v['Quantity'],
+                  'avgPrice': v['Price'],
+                  'orderRef': v['Order Ref.'],
+                  'evRule': '',
+                  'evMultiplier': 0.0,
+                  'modelCode': '',
+                  'lastLiquidity': 1},
+                 'commissionReport': {'execId': v['ID'],
+                  'commission': v['Commission'],
+                  'currency': v['Currency'],
+                  'yield_': 0.0,
+                  'yieldRedemptionDate': 0}}
+
+        if not np.isnan(v['Realized P&L']):
+            _v['realizedPNL'] = v['Realized P&L']
+
+        try:
+            col.insert(_v)
+        except pm.errors.DuplicateKeyError:
+            print(f"{_v['execution']['execId']}已存在")
+        else:
+            print(f"{_v['execution']['execId']}成功入库")
+    if not is_for:
+        raise Exception('for循环未执行！')
 
 print("import OK")

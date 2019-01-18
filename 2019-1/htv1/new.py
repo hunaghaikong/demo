@@ -1,4 +1,4 @@
-from htisec import Hsi
+from htisec import Hsi, save_ib_trade
 from jy import HS2
 from win_ui import Ui_MainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -43,6 +43,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.b_sell.clicked.connect(self.c_sell)
         self.b_stopbuy.clicked.connect(self.c_stopbuy)
         self.b_stopsell.clicked.connect(self.c_stopsell)
+        self.b_save_file.clicked.connect(self.c_save_file)
         self.b_orderlist.clicked.connect(self.c_orderlist)
         self.b_test.clicked.connect(self.c_test)
         self.b_test1.clicked.connect(self.c_test1)
@@ -553,6 +554,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #     w.statusBar().showMessage(web_trade.error)
         print('逐单止损...')
 
+
     def stop_change(self):
         curtext = self.box_stop_type.currentText()[0:1]
         if curtext == 'L':
@@ -943,6 +945,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #     ll = [b + a, b, b, b]
         ll = [1 for i in range(lots)]
         return ll
+
+    def c_save_file(self):
+        """ 保存交易记录 """
+        fileName, filetype = QFileDialog.getOpenFileName(self, "选择文件", "")
+        if fileName:
+            try:
+                save_ib_trade(fileName)
+                w.statusBar().showMessage("已经成功保存！")
+            except:
+                print('错误：文件格式不匹配！')
+                w.statusBar().showMessage("错误：文件格式不匹配！")
 
 
 if __name__ == "__main__":
