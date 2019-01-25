@@ -14,6 +14,7 @@ import sys
 import math
 import uuid
 import asyncio
+import calendar
 import pandas as pd
 
 from threading import Thread
@@ -75,9 +76,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.load_info()
         self.user = None
         self.pwd_id = None
-
-        self.prod = 'HSI'      # 合约
-        self.prodM = '201901'  # 月份
 
         self.zszyAll = {'zs': [], 'zy': []}  # 止损止盈组列表
 
@@ -445,14 +443,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def c_stop(self,buy_sell):
         if self.check_login(): return
         prod = self.box_product.currentText()[0:3]
-        prodM = self.box_month.currentText()[0:2]
+        prodM = self.box_month.currentText()[0:6]
         qty=self.box_qty.value()
         stop_price=self.box_stop_price.value()
         stop_type = self.box_stop_type.currentText()[0:1]
         addon=self.box_add2.value()
         # print(prod, prodM, qty, stop_price, stop_type, addon)
 
-        hsi = Future(self.prod, self.prodM)
+        hsi = Future(prod, prodM)
         if web_trade.ib.qualifyContracts(hsi):
             if buy_sell == 'B':
                 order = StopLimitOrder('BUY', qty, stop_price+addon, stop_price,
@@ -470,12 +468,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def c_order(self, buy_sell):
         '''click buy button'''
         if self.check_login(): return
-        prod = self.box_product.currentText()#[0:3]
-        prodM = self.box_month.currentText()#[0:2]
+        prod = self.box_product.currentText()[0:3]
+        prodM = self.box_month.currentText()[0:6]
         price = self.box_price.value()
         qty = self.box_qty.value()
 
-        hsi = Future(self.prod, self.prodM)
+        hsi = Future(prod, prodM)
         if web_trade.ib.qualifyContracts(hsi):
             if buy_sell == 'B':
                 order = LimitOrder('BUY', qty, price,
@@ -508,7 +506,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         pwd_id = (self.l_pwd.text()).split('/')
         pwd = int(pwd_id[0])
         clientId = int(pwd_id[1])
-        print(self.user,'..........')
+
         if not self.user or (user != self.user or self.pwd_id != pwd_id):
             if self.user:
                 web_trade.ib.disconnect()
@@ -540,6 +538,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # for ll in stop_type:
         #     self.box_stop_type.addItem(ll)
         #show orderlist
+
+        wb = {'HSI': 'HSI-恒生指数', 'HHI': 'HHI-H股指数', 'MHI': 'MHI-小型恒生指数', 'MCH': 'MCH-小型H股指数',
+              'DHS': 'DHS-恒指股息', 'DHH': 'DHH-恒生国企股息', 'VHS': 'VHS-恒指波幅指数'}
+
+        for prod in wb: #web_trade.prodNameF:
+            self.box_product.addItem(wb[prod])
         self.c_orderlist()
 
 
@@ -566,17 +570,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     # commbox prod_change
     def prod_change(self):
-        try:
-            self.box_month.clear()
-            self.box_month.setCurrentText("a")
-            prod = self.box_product.currentText()[0:3]
-            # w.statusBar().showMessage(self.box_product.currentText())
-            month = web_trade.prodMonthF[prod]
-            #print(month)
-            for mm in month:
-                self.box_month.addItem("%s-%s" % (mm, month[mm]))
-        except Exception as e:
-            print("prod_change Try_Error:",e)
+        # try:
+        #     self.box_month.clear()
+        #     self.box_month.setCurrentText("a")
+        #     prod = self.box_product.currentText()[0:3]
+        #     # w.statusBar().showMessage(self.box_product.currentText())
+        #     month = web_trade.prodMonthF[prod]
+        #     #print(month)
+        #     for mm in month:
+        #         self.box_month.addItem("%s-%s" % (mm, month[mm]))
+        # except Exception as e:
+        #     print("prod_change Try_Error:",e)
+
+        this_dt = datetime.datetime.now()
+        first_day = datetime.date(this_dt.year, this_dt.month, 1)
+        days_num = calendar.monthrange(first_day.year, first_day.month)[1]  # 获取一个月有多少天
+        next_month = first_day + datetime.timedelta(days=days_num)  # 获取下月
+
+        this_month = str(this_dt).replace('-','')[:6]
+        next_month = str(next_month).replace('-','')[:6]
+        month = {this_month, next_month}  # {'F8': '2018/01', 'G8': '2018/02', 'H8': '2018/03', 'M8': '2018/06'}
+        for mm in month:
+            self.box_month.addItem(mm)
 
     #radio button rStop1
     def c_rStop1(self):
