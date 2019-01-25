@@ -45,6 +45,7 @@ def main():
     for code in codes:
         path = r"D:\tools\Tools\January_2019\2019-1-18\data\%s.pkl" % code
         data = get_data(path)
+        data = data.sort_values('datetime')
         hsi = [i for i in tjs(data)]
         hsi = pd.DataFrame(hsi, columns=columns)
         hsi.to_csv('%s_day.csv' % code)
