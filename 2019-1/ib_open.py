@@ -617,7 +617,7 @@ class ZB(object):
                 res[dates] = {'duo': 0, 'kong': 0, 'mony': 0, 'datetimes': [], 'dy': 0, 'xy': 0, 'ch': 0, }
             
             is_dk = not (is_k == -1 or is_d == 1)
-            dt2 = data2.send(data)
+            dt2 = data2.send(data[:6])
             if dt2:
                 dt2 = dt2[-1]
             (
@@ -630,7 +630,7 @@ class ZB(object):
             datetimes_hour = datetimes.hour
 
             # if zts2 is None:
-            zts2 = _zts2.send(data)
+            zts2 = _zts2.send(data[:6])
             if zts2 is not None:
                 ztss = _zts.send(zts2)
                 if ztss:
@@ -653,8 +653,13 @@ class ZB(object):
             _zt = zts[0] if zts else ('', 0, 0)
             len_startMony_d = len(startMony_d)
             len_startMony_k = len(startMony_k)
-            kctj_d = _zt[1] > 1 and _zt[2]<0 and last_pop==1 and len_startMony_d<8 and (16 > datetimes_hour > 9)
-            kctj_k = _zt[1] < -1 and _zt[2]>0 and last_pop==1 and len_startMony_k<8 and (16 > datetimes_hour > 9)
+
+            kctj_d = _zt[1] > 1 and _zt[2]<0 and last_pop==1 and len_startMony_d<8 and (16 > datetimes_hour >= 9) and data[6] == 'SS'
+            kctj_k = _zt[1] < -1 and _zt[2]>0 and last_pop==1 and len_startMony_k<8 and (16 > datetimes_hour >= 9) and data[6] == 'SS'
+            # 上面两行为了测试，正确应为下面两行
+            # kctj_d = _zt[1] > 3 and _zt[2] < 0 and last_pop == 1 and len_startMony_d < 8 and (16 > datetimes_hour > 9)
+            # kctj_k = _zt[1] < -3 and _zt[2] > 0 and last_pop == 1 and len_startMony_k < 8 and (16 > datetimes_hour > 9)
+
             last_pop = 0
             pctj_d = _zt[2]>60
             pctj_k = _zt[2]<-60
@@ -879,8 +884,9 @@ def main2():
         time.sleep(30)
 
 ib = IB()
-ib.connect('192.168.2.204', 7496, clientId=3, timeout=3)
-hsi = Future(localSymbol='HSIF9')
+CODE = 'HSIF9'
+ib.connect('192.168.2.204', 7496, clientId=8, timeout=3)
+hsi = Future(localSymbol=CODE)
 ib.qualifyContracts(hsi)
 
 def xiadan(price, vb):
@@ -894,8 +900,8 @@ def xiadan(price, vb):
 
 
 def main():
-    sql = f"SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM wh_same_month_min WHERE prodcode='HSI' ORDER BY DATETIME DESC LIMIT 2300,2600"
-    dtsql = f"SELECT DATETIME,OPEN,high,low,CLOSE,vol FROM wh_same_month_min WHERE prodcode='HSI' ORDER BY DATETIME DESC LIMIT 0,2300"
+    sql = f"SELECT DATETIME,OPEN,high,low,CLOSE,vol,'LS' FROM wh_same_month_min WHERE prodcode='HSI' ORDER BY DATETIME DESC LIMIT 2300,2600"
+    dtsql = f"SELECT DATETIME,OPEN,high,low,CLOSE,vol,'LS' FROM wh_same_month_min WHERE prodcode='HSI' ORDER BY DATETIME DESC LIMIT 0,2300"
     conn = myconn.get_conn('carry_investment')
     data = myconn.getSqlData(conn, sql)
     data = list(data)
@@ -917,15 +923,16 @@ def main():
         # data2 = list(myconn.getSqlData(conn, dtsql))
         # data2.reverse()
         data2 = pickle.loads(red.get('whfuture_min1'))
-        for dt in data2[-200:]:
+        for dt in data2[-10:]:
             dt = list(dt[1:7])
             dt[0] = datetime.datetime.strptime(dt[0],'%Y-%m-%d %H:%M:%S')
+            dt.append('SS')  # 用SS标记为实时数据
             if dt[0] not in data_dt:
                 data_dt.add(dt[0])
                 data.append(dt)
                 zs = zbjs.send(dt)
                 if zs:
-                    xiadan(zs[1],zs[2])
+                    # xiadan(zs[1],zs[2])
                     print(zs, '下单时间:',str(datetime.datetime.now()))
                 # print(data[-2:])
                 # time.sleep(0.05)
