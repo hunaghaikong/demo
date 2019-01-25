@@ -6,6 +6,10 @@ import win32con
 import win32gui
 import pymouse
 import pykeyboard
+
+import redis
+import pickle
+
 from datetime import datetime
 import pyautogui as pag
 from struct import unpack
@@ -14,6 +18,10 @@ from win32gui import IsWindow, IsWindowEnabled, IsWindowVisible, GetWindowText, 
 from pymouse import PyMouse
 from pykeyboard import PyKeyboard
 from ctypes import windll as win32
+
+
+Red = redis.Redis()  # key whfuture_min1
+Min = []
 
 try:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -176,11 +184,15 @@ class WHCJ:
             try:
                 cur.execute(sql, (code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]))
                 insert_size += 1
+                if dat == '00034182.dat' and folder == 'min1':
+                	Min.append((code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]))
             except Exception as exc:
                 print(exc)
             count += 1
             if not count % 10000:
                 self.conn.commit()
+        if dat == '00034182.dat' and folder == 'min1':
+        	Red.set('whfuture_min1', pickle.dumps(Min))
         return insert_size
 
     def main(self, to_file=None):
@@ -330,7 +342,7 @@ class WHCJ:
             # win32gui.SetForegroundWindow(win) # 指定句柄设置为前台，也就是激活
             # win32gui.SetBkMode(win, win32con.TRANSPARENT) # 设置为后台
             start_time = t2 if start_time == 1 else start_time
-            time.sleep(120)
+            time.sleep(60)
 
 
 if __name__ == '__main__':
