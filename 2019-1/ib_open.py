@@ -4,10 +4,12 @@ import copy
 import pandas as pd
 import redis
 import pickle
+import sys
 
 from myconn import myconn
 from collections import deque, namedtuple
 from ib_insync import LimitOrder, Future, IB, util, StopLimitOrder
+
 
 """
 ib自动下单
@@ -884,7 +886,7 @@ def main2():
         time.sleep(30)
 
 ib = IB()
-CODE = 'HSIF9'
+CODE = 'HSIG9'
 ib.connect('192.168.2.204', 7496, clientId=8, timeout=3)
 hsi = Future(localSymbol=CODE)
 ib.qualifyContracts(hsi)
@@ -899,7 +901,7 @@ def xiadan(price, vb):
 
 
 
-def main():
+def main(ccl=0):
     sql = f"SELECT DATETIME,OPEN,high,low,CLOSE,vol,'LS' FROM wh_same_month_min WHERE prodcode='HSI' ORDER BY DATETIME DESC LIMIT 2300,2600"
     dtsql = f"SELECT DATETIME,OPEN,high,low,CLOSE,vol,'LS' FROM wh_same_month_min WHERE prodcode='HSI' ORDER BY DATETIME DESC LIMIT 0,2300"
     conn = myconn.get_conn('carry_investment')
@@ -919,6 +921,7 @@ def main():
             if zs:
                 print(zs, dt[0])
     red = redis.Redis()
+
     while True:
         # data2 = list(myconn.getSqlData(conn, dtsql))
         # data2.reverse()
@@ -932,13 +935,24 @@ def main():
                 data.append(dt)
                 zs = zbjs.send(dt)
                 if zs:
-                    # xiadan(zs[1],zs[2])
-                    print(zs, '下单时间:',str(datetime.datetime.now()))
+                    if (ccl > 0 and zs[2] < 0) or (ccl < 0 and zs[2] > 0):
+                        xiadan(zs[1], ccl)
+                        print(zs[:2]+[ccl], '下单时间:', str(datetime.datetime.now()))
+                        ccl = 0
+                    else:
+                        ccl += zs[2]
+                        xiadan(zs[1], zs[2])
+                        print(zs, '下单时间:', str(datetime.datetime.now()))
+
                 # print(data[-2:])
                 # time.sleep(0.05)
         time.sleep(30)
 
 
 if __name__ == '__main__':
-    main()
+    argv = sys.argv
+    ccl = 0  # 持仓量
+    if len(argv) > 1:
+        ccl = int(argv[1])
+    main(ccl)
 
