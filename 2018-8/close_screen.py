@@ -40,6 +40,7 @@ if __name__ == '__main__':
         	for i in range(30):
         		u32.close_screen()
         		time.sleep(2)
-        for i in range(90):
-            u32.close_screen()
-            time.sleep(2)
+        else:
+	        for i in range(60):
+	            u32.close_screen()
+	            time.sleep(2)
