@@ -3,6 +3,7 @@ import datetime
 import copy
 import pandas as pd
 import redis
+import os
 import pickle
 import sys
 
@@ -590,7 +591,18 @@ class ZB(object):
         zsjg2 = zsjg
         _zsjg_d, _zsjg_k = 0, 0
         jg_d, jg_k = 0, 0
-        startMony_d, startMony_k = [], []
+
+        if not os.path.isfile('startMony_d.pkl'):
+            startMony_d = []
+        else:
+            with open('startMony_d.pkl','rb') as f:
+                startMony_d = pickle.loads(f.read())
+        if not os.path.isfile('startMony_k.pkl'):
+            startMony_k = []
+        else:
+            with open('startMony_k.pkl','rb') as f:
+                startMony_k = pickle.loads(f.read())
+
         str_time1, str_time2 = '', ''
         is_d, is_k = 0, 0
         res = {}
@@ -617,7 +629,9 @@ class ZB(object):
             dates = str(data[0])[:10]
             if dates not in res:
                 res[dates] = {'duo': 0, 'kong': 0, 'mony': 0, 'datetimes': [], 'dy': 0, 'xy': 0, 'ch': 0, }
-            
+
+            is_write = False  # 是否把持仓写入pkl文件
+
             is_dk = not (is_k == -1 or is_d == 1)
             dt2 = data2.send(data[:6])
             if dt2:
@@ -687,6 +701,7 @@ class ZB(object):
                     kcs = [str(datetimes), clo, 1]
                 str_time1 = str(datetimes)
                 is_d = 1
+                is_write = True
                 first_time = [str_time1, '多', clo]
                 zsjg = low - clo - 1 if zsjg2 >= -10 else zsjg
                 _zsjg_d = 0
@@ -720,6 +735,7 @@ class ZB(object):
                     kcs = [str(datetimes), clo, -1]
                 str_time2 = str(datetimes)
                 is_k = -1
+                is_write = True
                 first_time = [str_time2, '空', clo]
                 zsjg = clo - high - 1 if zsjg2 >= -10 else zsjg
                 _zsjg_k = 0
@@ -763,6 +779,7 @@ class ZB(object):
                         _zsjg_d = 0
                         ydzs_d = 0
                         startMony_d = []
+                        is_write = True
                     elif low <= _zsjg_d:
                         zszy = -1  # 止损
                         for i in startMony_d:
@@ -781,6 +798,7 @@ class ZB(object):
                         _zsjg_d = 0
                         ydzs_d = 0
                         startMony_d = []
+                        is_write = True
             elif is_k == -1 and startMony_k:
                 ydzs_k = low if (ydzs_k == 0 or ydzs_k > low) else ydzs_k
                 _startMony_k = min(startMony_k,key=lambda xm:xm[1])[1]
@@ -806,6 +824,7 @@ class ZB(object):
                         _zsjg_k = 0
                         ydzs_k = 0
                         startMony_k = []
+                        is_write = True
                     elif high >= _zsjg_k:
                         zszy = -1  # 止损
                         for i in startMony_k:
@@ -824,7 +843,12 @@ class ZB(object):
                         _zsjg_k = 0
                         ydzs_k = 0
                         startMony_k = []
+                        is_write = True
 
+            if is_write:
+                with open('startMony_k.pkl','wb') as fk, open('startMony_d.pkl','wb') as fd:
+                    fk.write(pickle.dumps(startMony_k))
+                    fd.write(pickle.dumps(startMony_d))
 
 
 class Zbjs(ZB):
@@ -921,7 +945,7 @@ def main(ccl=0):
             if zs:
                 print(zs, dt[0])
     red = redis.Redis()
-
+    logs = open('logger.txt', 'w')
     while True:
         # data2 = list(myconn.getSqlData(conn, dtsql))
         # data2.reverse()
@@ -936,14 +960,17 @@ def main(ccl=0):
                 zs = zbjs.send(dt)
                 if zs:
                     if (ccl > 0 and zs[2] < 0) or (ccl < 0 and zs[2] > 0):
-                        xiadan(zs[1], ccl)
-                        print(zs[:2]+[ccl], '下单时间:', str(datetime.datetime.now()))
+                        xiadan(zs[1], -ccl)
+                        print(zs[:2]+[-ccl], '下单时间:', str(datetime.datetime.now()))
+                        logs.write(str(zs[:2]+[ccl])+'\n')
                         ccl = 0
                     else:
                         ccl += zs[2]
                         xiadan(zs[1], zs[2])
                         print(zs, '下单时间:', str(datetime.datetime.now()))
-
+                        logs.write(str(zs)+'\n')
+                    logs.flush()
+                    print(f'持仓：{ccl}')
                 # print(data[-2:])
                 # time.sleep(0.05)
         time.sleep(30)
@@ -953,6 +980,9 @@ if __name__ == '__main__':
     argv = sys.argv
     ccl = 0  # 持仓量
     if len(argv) > 1:
-        ccl = int(argv[1])
+        try:
+            ccl = int(argv[1])
+        except:
+            pass
     main(ccl)
 
