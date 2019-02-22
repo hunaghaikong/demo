@@ -128,7 +128,7 @@ class HuiGou:
                 url1 = f'http://hk.eastmoney.com/buyback_{i}.html?code=&sdate=&edate='
                 url2 = f'http://hk.eastmoney.com/buyback_{i+1}.html?code=&sdate=&edate='
                 if i == 843:
-                    joinall([spawn(self.cl_data, url), spawn(self.cl_data, ur2)])
+                    joinall([spawn(self.cl_data, url1), spawn(self.cl_data, url2)])
                     break
                 else:
                     url3 = f'http://hk.eastmoney.com/buyback_{i+2}.html?code=&sdate=&edate='
