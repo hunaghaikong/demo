@@ -328,7 +328,7 @@ class WHCJ:
             t_min = t.tm_hour * 60 + t.tm_min
             if t.tm_hour == 12 or (16 * 60 + 30 < t_min < 17 * 60 + 15) or (0 < t_min < 9 * 60 + 15):
                 continue
-            names = {'7202': 'HSIG9', '7121': 'HSI', '7253': 'MHI', '7234': 'HHI', '7214': 'HSI'}  # 要更新的产品代码
+            names = {'7203': 'HSIH9', '7121': 'HSI', '7253': 'MHI', '7234': 'HHI', '7214': 'HSI'}  # 要更新的产品代码
             for name in names:
                 if name not in {'7253', '7214'}:
                     if t2 - start_time < 600:

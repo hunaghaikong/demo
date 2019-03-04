@@ -376,11 +376,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # self.show_stop()
         # w.statusBar().showMessage("交易刷新成功!")
 
-    #触发空单
-    #触发空单
+    #止损
     def c_gostop(self):
         if self.check_login(): return
-
         getLots=self.box_lot1.value()
         if getLots==0:
             return
@@ -425,6 +423,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     web_trade.ib.placeOrder(hsi, order)
 
                     print("%d@%d-%s" % (-i, StopPrice, prod))
+        self.box_lot1.setValue(0)
         self.c_orderlist()
 
 
@@ -874,7 +873,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     web_trade.ib.placeOrder(hsi, order)
 
                     print("%s -%d@%d" % (prod, x, Price))
-
+        self.box_lot2.setValue(0)
         self.c_orderlist()
 
     #chg radio
