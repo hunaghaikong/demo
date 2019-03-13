@@ -150,6 +150,7 @@ class WHCJ:
 
     def file_to_sql(self, file_path, dat, code_time):
         """ 获得文件数据，插入数据库 """
+        global Min
         cur = self.conn.cursor()
         count = 0
         insert_size = 0
@@ -192,7 +193,8 @@ class WHCJ:
             if not count % 10000:
                 self.conn.commit()
         if dat == '00034182.dat' and folder == 'min1':
-        	Red.set('whfuture_min1', pickle.dumps(Min))
+            Min = Min[-100:]  # 限制为只保存100条分钟数据
+            Red.set('whfuture_min1', pickle.dumps(Min))
         return insert_size
 
     def main(self, to_file=None):

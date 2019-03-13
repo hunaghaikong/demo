@@ -670,12 +670,13 @@ class ZB(object):
             len_startMony_d = len(startMony_d)
             len_startMony_k = len(startMony_k)
 
-            kctj_d = _zt[1] > 1 and _zt[2]<0 and last_pop==1 and len_startMony_d<8 and (16 > datetimes_hour >= 9) and data[6] == 'SS'
-            kctj_k = _zt[1] < -1 and _zt[2]>0 and last_pop==1 and len_startMony_k<8 and (16 > datetimes_hour >= 9) and data[6] == 'SS'
+            # 测试
+            # kctj_d = _zt[1] > 1 and _zt[2] < 0 and last_pop == 1 and len_startMony_d<8 and (16 > datetimes_hour >= 9) and data[6] == 'SS'
+            # kctj_k = _zt[1] < -1 and _zt[2] > 0 and last_pop == 1 and len_startMony_k<8 and (16 > datetimes_hour >= 9) and data[6] == 'SS'
             # 上面两行为了测试，正确应为下面两行
-            # kctj_d = _zt[1] > 3 and _zt[2] < 0 and last_pop == 1 and len_startMony_d < 8 and (16 > datetimes_hour > 9)
-            # kctj_k = _zt[1] < -3 and _zt[2] > 0 and last_pop == 1 and len_startMony_k < 8 and (16 > datetimes_hour > 9)
-
+            kctj_d = _zt[1] > 3 and _zt[2] < 0 and last_pop == 1 and len_startMony_d < 8 and (16 > datetimes_hour > 9) and data[6] == 'SS'
+            kctj_k = _zt[1] < -3 and _zt[2] > 0 and last_pop == 1 and len_startMony_k < 8 and (16 > datetimes_hour > 9) and data[6] == 'SS'
+ 
             last_pop = 0
             pctj_d = _zt[2]>60
             pctj_k = _zt[2]<-60
@@ -910,7 +911,7 @@ def main2():
         time.sleep(30)
 
 ib = IB()
-CODE = 'HSIG9'
+CODE = 'HSIH9'
 ib.connect('192.168.2.204', 7496, clientId=8, timeout=3)
 hsi = Future(localSymbol=CODE)
 ib.qualifyContracts(hsi)
