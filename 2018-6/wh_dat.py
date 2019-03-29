@@ -60,8 +60,13 @@ class WHCJ:
         # 7234 # HHI 00034214.dat
         # 恒生期货当月
         self.same_month = {'00034182.dat': 'HSI', '00034233.dat': 'MHI', '00034214.dat': 'HHI'}
-        # 恒生指数
-        self.index = {'00033906.dat': 'HSI'}
+        # 恒生指数 HSI, 国内 IF,IH,IC 主连
+        self.index = {
+            '00033906.dat': 'HSI',
+            '00010067.dat': 'IF',
+            '00010083.dat': 'IH',
+            '00010213.dat': 'IC',
+        }
 
     def transfer_min1(self, files):
         ''' 解析一分钟、五分钟数据 '''
@@ -186,7 +191,7 @@ class WHCJ:
                 cur.execute(sql, (code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]))
                 insert_size += 1
                 if dat == '00034182.dat' and folder == 'min1':
-                	Min.append((code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]))
+                    Min.append((code, str(i[0])[:19], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]))
             except Exception as exc:
                 print(exc)
             count += 1
@@ -206,18 +211,19 @@ class WHCJ:
         index = self.index
         same_month = self.same_month
         dat = to_file.split('\\')[-1] if to_file else 0
-
+        folder = to_file.split('\\')[-2] if to_file else ''
         cur = self.conn.cursor()
-        if to_file.split('\\')[-2] == 'min1' and dat in same_month:
+        if folder == 'min1' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min WHERE prodcode='%s' ORDER BY datetime DESC LIMIT 1" % \
                             same_month[dat]
-        elif to_file.split('\\')[-2] == 'min1' and dat in hsi:
+        elif folder == 'min1' and dat in hsi:
             code_time_sql = "SELECT prodcode,datetime FROM wh_min ORDER BY datetime DESC LIMIT 1"
-        elif to_file.split('\\')[-2] == 'min1' and dat in index:
-            code_time_sql = "SELECT prodcode,datetime FROM wh_index_min ORDER BY datetime DESC LIMIT 1"
-        elif to_file.split('\\')[-2] == 'day' and dat in same_month:
+        elif folder == 'min1' and dat in index:
+            code_time_sql = "SELECT prodcode,datetime FROM wh_index_min WHERE prodcode='%s' ORDER BY datetime DESC LIMIT 1" % \
+                            index[dat]
+        elif folder == 'day' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_day ORDER BY datetime DESC LIMIT 1"
-        elif to_file.split('\\')[-2] == 'min5' and dat in same_month:
+        elif folder == 'min5' and dat in same_month:
             code_time_sql = "SELECT prodcode,datetime FROM wh_same_month_min5 ORDER BY datetime DESC LIMIT 1"
         else:
             return
@@ -330,14 +336,19 @@ class WHCJ:
             t_min = t.tm_hour * 60 + t.tm_min
             if t.tm_hour == 12 or (16 * 60 + 30 < t_min < 17 * 60 + 15) or (0 < t_min < 9 * 60 + 15):
                 continue
-            names = {'7203': 'HSIH9', '7121': 'HSI', '7253': 'MHI', '7234': 'HHI', '7214': 'HSI'}  # 要更新的产品代码
+
+            # 要更新的产品代码
+            names = {'7203': 'HSIH9', '7121': 'HSI', '7253': 'MHI',
+                     '7234': 'HHI', '8618': 'IF',
+                     '8633': 'IH', '8693': 'IC', '7214': 'HSI'}
             for name in names:
                 if name not in {'7253', '7214'}:
                     if t2 - start_time < 600:
                         continue
                     else:
                         start_time = 1
-
+                if name in {'8618', '8633', '8693'} and t.tm_hour > 14:
+                    continue
                 print('更新产品：', name, names[name], '...')
                 start_name(name)
                 time.sleep(5)

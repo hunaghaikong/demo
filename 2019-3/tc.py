@@ -1,5 +1,6 @@
 import time
 import json
+import re
 import datetime
 import requests
 from pyquery import PyQuery
@@ -8,6 +9,9 @@ from threading import Thread
 
 """
 博彩网站数据，套利统计
+标准：
+[俱乐部友谊赛，'Club Friendlies'，平顺，'Binh Thuan'，前江，'Tien Giang'，'2019-06-06 02:45:00'，
+{'1x2':[],'1x21st':[],'dx':[]}, 'https://www.18x8bet.com/zh-cn/sports/3061823/布里斯班狮吼-vs-悉尼']
 """
 
 
@@ -18,6 +22,8 @@ THIS_DATE = str(datetime.datetime.now())[:10]
 res1 = []
 res2 = []
 res3 = []
+res4 = []
+res5 = []
 
 
 def get_landing(page=0):
@@ -31,7 +37,7 @@ def get_landing(page=0):
 		}
 
 	res_frist = []
-	for page in range(3000):
+	for page in range(30):
 		post_data = {
 			'CompetitionID': -1,
 			'IsEventMenu': False,
@@ -76,7 +82,6 @@ def get_landing(page=0):
 		res_pl = []
 
 		for i in d['mod']['d']:
-			name = i['n']
 			for j in i['c']:
 				t_name = j['n']
 				for v in j['e']:
@@ -88,17 +93,29 @@ def get_landing(page=0):
 						if x1x:
 							x1x = (float(x1x[1]),float(x1x[5]),float(x1x[3]))
 						_id = v['k']
-						_z = v['i'][0]
-						_k = v['i'][1]
+						_z,_k = v['i'][0],v['i'][1]  # 中文名称
+						_yz,_yk = v['i'][-3].replace('-',' ').split(' vs ')  # 英文名称
 						address = f"https://www.18x8bet.com/zh-cn/sports/{_id}/{_z}-vs-{_k}"
+						edt = str(datetime.datetime.strptime(v['edt'],'%Y-%m-%dT%H:%M:%S')+datetime.timedelta(hours=12))
 						if x1x:
-							res_pl.append((name,t_name,_id,v['edt'].replace('T',' '),_z,_k,{'1x21st':x2st,'1x2':x1x},address))
+							res_pl.append((t_name,'',_z,_yz,_k,_yk,edt,{'1x2':x1x,'1x21st':x2st,
+								'dx':[float(v['o']['ou'][5]),float(v['o']['ou'][1]),float(v['o']['ou'][7])],
+								"hasParlay": v['hasParlay'],
+								"hide": v['hide'],
+								"egn": v['egn'],
+								"heid": v['heid'],
+								"l": v['l'],
+								"ibs": v['ibs'],
+								"ibsc": v['ibsc'],
+								"page": page},
+					address))
 					except:
 						pass
 		if res_pl and res_frist == res_pl:
 			return
 		res1.extend(res_pl)
 		res_frist = res_pl
+	print('get_landing Yes........')
 
 
 
@@ -106,7 +123,7 @@ def get_marathonbet(page=0):
 
 	res_frist = []
 
-	for page in range(3000):
+	for page in range(60):
 		try:
 			url = f'https://www.marathonbet.com/zh/betting/Football/?page={page}&pageAction=getPage&_='+str(int(time.time()*1000))
 			d = requests.get(url).text
@@ -155,14 +172,17 @@ def get_marathonbet(page=0):
 							_date = THIS_DATE+' '+_date+':00'
 						v = [i.text for i in span]
 						if len(v) > 13:
-							res.append((v[0],v[1],_date,float(v[4]),float(v[6]),float(v[5]),float(v[11]),float(v[13]),float(v[12]),address))
+							dxz = tr('.total-left')[0].text # 全场大小球的界限数
+							res.append(('','',v[0],'',v[1],'',_date,{'1x2':[float(v[4]),float(v[6]),float(v[5])],
+								'1x21st':[float(v[11]),float(v[13]),float(v[12])],'dx':[float(v[9]),float(dxz.split(',')[0]),float(v[10])]},address))
 			if res_frist == res:
-				return 
+				break 
 			res2.extend(res)
 			res_frist = res
 		except Exception as exc:
 			print(exc)
-			return 
+	print('get_marathonbet Yes........')
+			 
 
 
 
@@ -172,7 +192,8 @@ def get_bwin9828():
 	h = requests.get(url,headers=headers).text
 	h2 = PyQuery(h)
 	h3 = h2('.coupon-homepage__group-link')
-	res2 = []
+
+	res_dict = {}
 	for i in h3:
 		title = i.attrib['title']
 		n_url = bsUrl + i.attrib['href']
@@ -211,11 +232,59 @@ def get_bwin9828():
 							span4 = td4('span')
 							price_2 = float(span4.attr('data-price'))
 							name = n_title.split('v')
-							res3.append((title,name[0].strip(),name[1].strip(),dts,price_1,price_x,price_2,qcbc,bsUrl+href))
-							# res2[bsUrl+href] = (title,name[0].strip(),name[1].strip(),dts,price_1,price_x,price_2,bsUrl+href)
-					except:
-						pass
+							name0 = name[0].strip()
+							name1 = name[1].strip()
+							_key = f"{name0}{dts}{name1}"
+							if _key not in res_dict:
+								res_dict[_key] = [title,'',name0,'',name1,'',dts,{qcbc:[price_1,price_x,price_2],'dx':[]},bsUrl+href]
+							else:
+								res_dict[_key][7][qcbc] = [price_1,price_x,price_2]
+							# res3.append((title,name[0].strip(),name[1].strip(),dts,price_1,price_x,price_2,qcbc,bsUrl+href))
+					except Exception as exc:
+						print(exc)
+	[res3.append(tuple(res_dict[i])) for i in res_dict]
+	print('get_bwin9828 Yes........')
 
+
+
+def get_1xbet888():
+	baseUrl = 'https://1xbet888.com/line/Football/'
+	url='https://1xbet888.com/LineFeed/Get1x2_VZip?sports=1&count=500&lng=cn&tf=2200000&tz=8&mode=4&country=90&partner=57&getEmpty=true'
+	h=requests.get(url)
+	h=h.text
+	h=json.loads(h)
+
+	for i in h['Value']:
+		try:
+			jlb = i['LE'].replace('.','')
+			ynz = i['O1E'].replace('.','')
+			ynk = i['O2E'].replace('.','')
+			ie = i['E']
+			ie.sort(key=lambda x: x['T'])
+			_1x2 = [ie[0]['C'],ie[1]['C'],ie[2]['C']]
+			if len(ie) > 3:
+				_dx = [ie[8]['C'],ie[8]['P'],ie[9]['C']]
+			else:
+				_dx = []
+			address = f"{baseUrl}{i['LI']}-{jlb.replace(' ','-')}/{i['CI']}-{ynz.replace(' ','-')}-{ynk.replace(' ','-')}"
+			res4.append((i['L'], jlb, i['O1'], ynz, i['O2'], ynk, str(datetime.datetime.fromtimestamp(i['S'])),
+				{'1x2':_1x2,'1x21st':[],'dx':_dx},
+				address))
+		except Exception as exc:
+			print(exc)
+	print('get_1xbet888 Yes........')
+
+
+def get_bet365():
+	baseUrl = ''
+	url = 'https://www.bet365.com/SportsBook.API/web?lid=10&zid=0&pd=%23AS%23B1%23&cid=198&ctid=198'
+	url2 = 'https://www.bet365.com/SportsBook.API/web?lid=10&zid=0&pd=%23AC%23B1%23C1%23D14%23E406%23F16%23&cid=198&ctid=198'
+
+
+	h = requests.get(url, headers=headers).text
+	com=re.compile(r'PD=(.*?);')
+	url_id=re.findall(com,h)
+	url_id=[f"https://www.bet365.com/SportsBook.API/web?lid=10&zid=0&pd={i.replace('#','%23')}&cid=198&ctid=198" for i in url_id if len(i)==23]
 
 
 def hlzh(x,y,z):
@@ -235,82 +304,126 @@ def hlzh(x,y,z):
 	return round(x*x2/(x2+y2+z2),3),(x2,y2,z2)
 
 
-
+def gt_rs(rss,key,ks='1x2'):
+	c1 = {i[key][7][ks][0]:i[key][-1] for i in rss if key in i and i[key][7].get(ks)}
+	cx = {i[key][7][ks][1]:i[key][-1] for i in rss if key in i and i[key][7].get(ks)}
+	c2 = {i[key][7][ks][2]:i[key][-1] for i in rss if key in i and i[key][7].get(ks)}
+	return c1,cx,c2
 
 
 t1 = Thread(target=get_landing)
 t2 = Thread(target=get_marathonbet)
 t3 = Thread(target=get_bwin9828)
+t4 = Thread(target=get_1xbet888)
 
 t1.start()
 t2.start()
 t3.start()
+t4.start()
 
 t1.join()
 t2.join()
 t3.join()
+t4.join()
 
 
-r1={i[4]:i for i in res1}
-r2={i[0]:i for i in res2}
-r3={i[1]:i for i in res3 if i[7]=='1x2'}
+r1={f"{i[2]}+{i[6]}":i for i in res1 if i[-2]['ibsc']}
+r2={f"{i[2]}+{i[6]}":i for i in res2}
+r3={f"{i[2]}+{i[6]}":i for i in res3}
+r4={f"{i[2]}+{i[6]}":i for i in res4}
 
-# r11 = {i[5]:i for i in res1}
-# r22 = {i[1]:i for i in res2}
-# r33 = {i[2]:i for i in res3 if i[7]=='1x2'}
+# r1={i[2]:i for i in res1 if i[-2]['ibsc']}
+# r2={i[2]:i for i in res2}
+# r3={i[2]:i for i in res3}
+# r4={i[2]:i for i in res4}
+
 sss = []
 res = []
-for i in r1:
-	if i in r2 and i in r3:
-		r1_time = str(datetime.datetime.strptime(r1[i][3],'%Y-%m-%d %H:%M:%S')+datetime.timedelta(hours=12))
-		if r1_time == r2[i][2] == r3[i][3]:
-			_r1 = r1[i][6]['1x2']
-			c1 = {_r1[0]:r1[i][-1],r2[i][3]:r2[i][-1],r3[i][4]:r3[i][-1]}
-			cx = {_r1[1]:r1[i][-1],r2[i][4]:r2[i][-1],r3[i][5]:r3[i][-1]}
-			c2 = {_r1[2]:r1[i][-1],r2[i][5]:r2[i][-1],r3[i][6]:r3[i][-1]}
+ress2 = []
+
+def js_1x2(ks='1x2'):
+	rss = set(list(r1)+list(r2)+list(r3)+list(r4))
+	for i in rss:
+		c1,cx,c2=gt_rs((r1,r2,r3,r4),i,ks)
+		if len(c1)>1:
 			mc1,mcx,mc2 = max(c1),max(cx),max(c2)
 			gl,zh = hlzh(mc1,mcx,mc2)
 			sss.append(gl)
+			ress2.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2]),i))
 			if gl>1:
-				res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
-	if i in r2:
-		r1_time = str(datetime.datetime.strptime(r1[i][3],'%Y-%m-%d %H:%M:%S')+datetime.timedelta(hours=12))
-		if r1_time == r2[i][2]:
-			_r1 = r1[i][6]['1x2']
-			c1 = {_r1[0]:r1[i][-1],r2[i][3]:r2[i][-1]}
-			cx = {_r1[1]:r1[i][-1],r2[i][4]:r2[i][-1]}
-			c2 = {_r1[2]:r1[i][-1],r2[i][5]:r2[i][-1]}
-			mc1,mcx,mc2 = max(c1),max(cx),max(c2)
-			gl,zh = hlzh(mc1,mcx,mc2)
-			sss.append(gl)
-			if gl>1:
-				res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
-	elif i in r3:
-		r1_time = str(datetime.datetime.strptime(r1[i][3],'%Y-%m-%d %H:%M:%S')+datetime.timedelta(hours=12))
-		if r1_time == r3[i][3]:
-			_r1 = r1[i][6]['1x2']
-			c1 = {_r1[0]:r1[i][-1],r3[i][4]:r3[i][-1]}
-			cx = {_r1[1]:r1[i][-1],r3[i][5]:r3[i][-1]}
-			c2 = {_r1[2]:r1[i][-1],r3[i][6]:r3[i][-1]}
-			mc1,mcx,mc2 = max(c1),max(cx),max(c2)
-			gl,zh = hlzh(mc1,mcx,mc2)
-			sss.append(gl)
-			if gl>1:
-				res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+				res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2]),i))
 
-for i in r2:
-	if i in r3:
-		if r2[i][2] == r3[i][3]:
-			c1 = {r2[i][3]:r2[i][-1],r3[i][4]:r3[i][-1]}
-			cx = {r2[i][4]:r2[i][-1],r3[i][5]:r3[i][-1]}
-			c2 = {r2[i][5]:r2[i][-1],r3[i][6]:r3[i][-1]}
-			mc1,mcx,mc2 = max(c1),max(cx),max(c2)
-			gl,zh = hlzh(mc1,mcx,mc2)
-			sss.append(gl)
-			if gl>1:
-				res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 	elif i in r2 and i in r3:
+	# 		_r1 = r1[i][7]['1x2']
+	# 		_r2 = r2[i][7]['1x2']
+	# 		_r3 = r3[i][7]['1x2']
+	# 		c1 = {_r1[0]:r1[i][-1],_r2[0]:r2[i][-1],_r3[0]:r3[i][-1]}
+	# 		cx ={_r1[1]:r1[i][-1],_r2[1]:r2[i][-1],_r3[1]:r3[i][-1]}
+	# 		c2 = {_r1[2]:r1[i][-1],_r2[2]:r2[i][-1],_r3[2]:r3[i][-1]}
+	# 		mc1,mcx,mc2 = max(c1),max(cx),max(c2)
+	# 		gl,zh = hlzh(mc1,mcx,mc2)
+	# 		sss.append(gl)
+	# 		ress2.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 		if gl>1:
+	# 			res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 	elif i in r2:
+	# 		_r1 = r1[i][7]['1x2']
+	# 		_r2 = r2[i][7]['1x2']
+	# 		c1 = {_r1[0]:r1[i][-1],_r2[0]:r2[i][-1]}
+	# 		cx = {_r1[1]:r1[i][-1],_r2[1]:r2[i][-1]}
+	# 		c2 = {_r1[2]:r1[i][-1],_r2[2]:r2[i][-1]}
+	# 		mc1,mcx,mc2 = max(c1),max(cx),max(c2)
+	# 		gl,zh = hlzh(mc1,mcx,mc2)
+	# 		sss.append(gl)
+	# 		ress2.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 		if gl>1:
+	# 			res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 	elif i in r3:
+	# 		_r1 = r1[i][7]['1x2']
+	# 		_r3 = r3[i][7]['1x2']
+	# 		c1 = {_r1[0]:r1[i][-1],_r3[0]:r3[i][-1]}
+	# 		cx = {_r1[1]:r1[i][-1],_r3[1]:r3[i][-1]}
+	# 		c2 = {_r1[2]:r1[i][-1],_r3[2]:r3[i][-1]}
+	# 		mc1,mcx,mc2 = max(c1),max(cx),max(c2)
+	# 		gl,zh = hlzh(mc1,mcx,mc2)
+	# 		ress2.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 		sss.append(gl)
+	# 		if gl>1:
+	# 			res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 	elif i in r4:
+	# 		_r1 = r1[i][7]['1x2']
+	# 		_r4 = r4[i][7]['1x2']
+	# 		c1 = {_r1[0]:r1[i][-1],_r4[0]:r4[i][-1]}
+	# 		cx = {_r1[1]:r1[i][-1],_r4[1]:r4[i][-1]}
+	# 		c2 = {_r1[2]:r1[i][-1],_r4[2]:r4[i][-1]}
+	# 		mc1,mcx,mc2 = max(c1),max(cx),max(c2)
+	# 		gl,zh = hlzh(mc1,mcx,mc2)
+	# 		ress2.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 		sss.append(gl)
+	# 		if gl>1:
+	# 			res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
 
-res.sort(key=lambda x:x[0])
-res.reverse()
+	# for i in r2:
+	# 	if i in r3:
+	# 		_r2 = r2[i][7]['1x2']
+	# 		_r3 = r3[i][7]['1x2']
+	# 		c1 = {_r2[0]:r2[i][-1],_r3[0]:r3[i][-1]}
+	# 		cx = {_r2[1]:r2[i][-1],_r3[1]:r3[i][-1]}
+	# 		c2 = {_r2[2]:r2[i][-1],_r3[2]:r3[i][-1]}
+	# 		mc1,mcx,mc2 = max(c1),max(cx),max(c2)
+	# 		gl,zh = hlzh(mc1,mcx,mc2)
+	# 		sss.append(gl)
+	# 		ress2.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+	# 		if gl>1:
+	# 			res.append((gl,(mc1,mcx,mc2),zh,(c1[mc1],cx[mcx],c2[mc2])))
+
+	res.sort(key=lambda x:x[0])
+	res.reverse()
+
+	ress2.sort(key=lambda x:x[0])
+	ress2.reverse()
+	return sss, res, ress2
 
 
+def js_1x21st():
+	pass
