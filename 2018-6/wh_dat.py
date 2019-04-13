@@ -345,10 +345,10 @@ class WHCJ:
                 if name not in {'7253', '7214'}:
                     if t2 - start_time < 600:
                         continue
+                    elif name in {'8618', '8633', '8693'} and t.tm_hour > 14:
+                        continue
                     else:
                         start_time = 1
-                if name in {'8618', '8633', '8693'} and t.tm_hour > 14:
-                    continue
                 print('更新产品：', name, names[name], '...')
                 start_name(name)
                 time.sleep(5)
